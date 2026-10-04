@@ -11,3 +11,5 @@ htmlcov/
 data/tiger/*.zip
 out/*.zip
 .DS_Store
+node_modules/
+.output/
