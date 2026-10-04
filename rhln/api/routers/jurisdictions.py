@@ -1,13 +1,20 @@
 """Jurisdiction and spatial resolution endpoints."""
 
-from typing import List, Optional
+import json
+import os
+from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from rhln.api.deps import get_request_id, verify_api_key
+from rhln.api.errors import NotFoundError
+from rhln.api.geo_catalog import JURISDICTION_CATALOG
 from rhln.api.schemas import DataEnvelope, wrap_data
+from rhln.geo.stack import JurisdictionResolver
+from rhln.models import SampleAddress
 
 router = APIRouter(tags=["Jurisdictions"])
+geo_resolver = JurisdictionResolver()
 
 
 class JurisdictionItem(BaseModel):
@@ -32,6 +39,17 @@ class ResolveResult(BaseModel):
     stack: List[dict]
 
 
+def get_rule_counts_by_jurisdiction() -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    if os.path.exists("out/rules.json"):
+        with open("out/rules.json") as f:
+            rules = json.load(f).get("rules", [])
+            for r in rules:
+                jur = r.get("jurisdiction", "")
+                counts[jur] = counts.get(jur, 0) + 1
+    return counts
+
+
 @router.get("/jurisdictions", response_model=DataEnvelope[List[JurisdictionItem]])
 async def list_jurisdictions(
     level: Optional[str] = Query(None, description="state, county, city"),
@@ -39,18 +57,28 @@ async def list_jurisdictions(
     in_scope: Optional[bool] = Query(True),
     request_id: str = Depends(get_request_id),
 ) -> DataEnvelope[List[JurisdictionItem]]:
-    """List supported jurisdictions with filtering (TRD P0)."""
-    # Sample starter data
-    items: List[JurisdictionItem] = [
-        JurisdictionItem(id="ca", level="state", name="California", state="CA", rule_count=9),
-        JurisdictionItem(id="ca-sf", level="consolidated", name="City and County of San Francisco", state="CA", rule_count=6),
-        JurisdictionItem(id="nj", level="state", name="New Jersey", state="NJ", rule_count=5),
-        JurisdictionItem(id="ma", level="state", name="Massachusetts", state="MA", rule_count=4),
-    ]
+    """List supported jurisdictions with real rule counts (TRD P0)."""
+    counts = get_rule_counts_by_jurisdiction()
+    items: List[JurisdictionItem] = []
+
+    for entry in JURISDICTION_CATALOG:
+        jur_count = counts.get(entry["name"], 0) or counts.get(entry["state"], 0)
+        items.append(
+            JurisdictionItem(
+                id=entry["id"],
+                level=entry["level"],
+                name=entry["name"],
+                state=entry["state"],
+                in_scope=entry.get("in_scope", True),
+                rule_count=jur_count,
+            )
+        )
+
     if state:
         items = [j for j in items if j.state.lower() == state.lower()]
     if level:
         items = [j for j in items if j.level == level]
+
     return wrap_data(data=items, request_id=request_id, total=len(items))
 
 
@@ -60,10 +88,22 @@ async def get_jurisdiction(
     request_id: str = Depends(get_request_id),
 ) -> DataEnvelope[JurisdictionItem]:
     """Get single jurisdiction detail (TRD P0)."""
-    return wrap_data(
-        data=JurisdictionItem(id=id, level="state", name=id.upper(), state=id.upper()[:2], rule_count=0),
-        request_id=request_id,
-    )
+    counts = get_rule_counts_by_jurisdiction()
+    for entry in JURISDICTION_CATALOG:
+        if entry["id"].lower() == id.lower():
+            jur_count = counts.get(entry["name"], 0) or counts.get(entry["state"], 0)
+            return wrap_data(
+                data=JurisdictionItem(
+                    id=entry["id"],
+                    level=entry["level"],
+                    name=entry["name"],
+                    state=entry["state"],
+                    in_scope=entry.get("in_scope", True),
+                    rule_count=jur_count,
+                ),
+                request_id=request_id,
+            )
+    raise NotFoundError(f"Jurisdiction '{id}' not found")
 
 
 @router.post("/resolve", response_model=DataEnvelope[ResolveResult])
@@ -72,12 +112,23 @@ async def resolve_address_stack(
     request_id: str = Depends(get_request_id),
 ) -> DataEnvelope[ResolveResult]:
     """Resolve an address to Census geocode and jurisdiction stack without evaluating rules (TRD P0)."""
+    addr = SampleAddress(
+        address_id="ADHOC",
+        street_address=req.street,
+        postal_city=req.city,
+        state=req.state,
+        zip=req.zip,
+    )
+    resolved = geo_resolver.resolve_address(addr)
+
     res = ResolveResult(
         address=req.model_dump(),
-        geocode={"status": "match", "lat": 37.75, "lon": -122.41, "state_fips": "06", "county_fips": "075"},
-        stack=[
-            {"id": "ca", "level": "state", "name": "California"},
-            {"id": "ca-sf", "level": "consolidated", "name": "San Francisco"},
-        ],
+        geocode={
+            "status": "match",
+            "legal_city": resolved.legal_city,
+            "county": resolved.legal_county,
+            "state": resolved.state,
+        },
+        stack=[n.model_dump() for n in resolved.stack],
     )
     return wrap_data(data=res, request_id=request_id)
