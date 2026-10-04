@@ -3,6 +3,9 @@
 > **Hack-Nation × RealPage Hackathon · Challenge 02: Rental Housing Law Navigator**  
 > *Autonomous AI Rule Extraction & Deterministic Multi-Jurisdictional Housing Law Engine*
 
+📚 **Documentation Quick Links:**
+[Technical Requirements Document (TRD)](./RHLN_TRD_v1.0.md) | [Architecture Diagram & Overview](./ARCHITECTURE.md) | [Methodology Note](./METHOD_NOTE.md) | [Deployment Guide](./DEPLOYMENT.md)
+
 ---
 
 ## 1. Project Overview & Motivation
@@ -278,3 +281,14 @@ rhln/
 ├── reference/                    # Hackathon PRD, TRD, and original starter materials
 └── tests/                        # Comprehensive pytest test suite
 ```
+
+---
+
+## 7. Deep-Dive Documentation
+
+This repository is extensively documented to explain the methodology, system design, and deployment strategy:
+
+1. **[Technical Requirements Document (RHLN_TRD_v1.0.md)](./RHLN_TRD_v1.0.md)**: The foundational TRD outlining all functional requirements, AI guardrails, schemas, Kleene logic rules, and the OpenAPI contract.
+2. **[Architecture Overview (ARCHITECTURE.md)](./ARCHITECTURE.md)**: A visual and structural breakdown of the "Offline Extraction" and "Online Deterministic Evaluation" system architecture.
+3. **[Methodology Note (METHOD_NOTE.md)](./METHOD_NOTE.md)**: A detailed explanation of the prompt engineering techniques, Kleene 3-valued logic design, precedence resolution, and strategies used to prevent LLM hallucinations.
+4. **[Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)**: Step-by-step instructions for hosting the FastAPI backend on Render and the TanStack Start frontend on Vercel.
