@@ -217,7 +217,7 @@ const OFFICIAL_CATEGORIES = [
 /* Main Lookup Page Component                                                */
 /* ------------------------------------------------------------------------- */
 
-export function LookupPage() {
+function LookupPage() {
   const { t, language } = useLang();
   const es = language === 'es';
 
@@ -629,10 +629,6 @@ export function LookupPage() {
       {/* Page Header */}
       <div className="border-b border-border/70 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary mb-2">
-            <Scale className="size-3.5" />
-            <span>{t('Address-Level Housing Law Engine', 'Motor de Leyes de Vivienda')}</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-foreground">
             {t('Address Lookup & Coverage Navigator', 'Consulta de Dirección y Cobertura')}
           </h1>
@@ -815,6 +811,11 @@ export function LookupPage() {
             </span>
             {showPropertyContext ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
           </button>
+          {!showPropertyContext && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 ml-5">
+              {t('Year built · Unit count · Tenancy duration · Query date — affects Costa-Hawkins & AB 1482 exemptions', 'Año de construcción · Unidades · Duración · Fecha — afecta exenciones Costa-Hawkins y AB 1482')}
+            </p>
+          )}
 
           {showPropertyContext && (
             <div className="mt-3 p-4 rounded-xl border border-border/80 bg-secondary/20 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-in fade-in duration-200">
@@ -1036,6 +1037,7 @@ export function LookupPage() {
                 <button
                   type="button"
                   onClick={() => setStatusFilter(statusFilter === 'unknown' ? 'all' : 'unknown')}
+                  title={t('Rules where building year or unit count is missing — supply property facts above to resolve them to a definitive applies/not-applies verdict.', 'Reglas donde faltan datos del inmueble — ingrese el año y las unidades para resolverlas.')}
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
                     statusFilter === 'unknown'
                       ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
@@ -1043,7 +1045,7 @@ export function LookupPage() {
                   }`}
                 >
                   <HelpCircle className="size-3.5" />
-                  {unknownCount} {t('Unknown', 'Sin determinar')}
+                  {unknownCount} {t('More Facts Needed', 'Faltan datos')}
                 </button>
 
                 {supersededCount > 0 && (
@@ -1170,99 +1172,75 @@ export function LookupPage() {
               </div>
 
               {/* 4 Scorecard Pillars */}
-              <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {/* 1. Rent Cap Pillar */}
-                <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-1 text-xs font-semibold text-muted-foreground mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <TrendingUp className="size-3.5 text-primary" />
-                        {t('Rent Increase Cap', 'Tope de Alquiler')}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                        {rentPillar.badge}
-                      </span>
-                    </div>
-                    <div className="text-base font-extrabold text-foreground">
-                      {rentPillar.title}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                      {rentPillar.desc}
-                    </p>
+                <div className="rounded-2xl border border-border/80 border-l-4 border-l-primary bg-card p-5 sm:p-6 shadow-xs flex flex-col gap-3 min-h-[220px]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <TrendingUp className="size-4 text-primary" />
+                      {t('Rent Increase Cap', 'Tope de Alquiler')}
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      {rentPillar.badge}
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-border/40 text-[11px] text-primary font-medium">
+                  <div className="text-2xl font-black text-foreground">{rentPillar.title}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{rentPillar.desc}</p>
+                  <div className="pt-3 border-t border-border/40 text-xs text-primary font-mono font-semibold">
                     {rentPillar.citation}
                   </div>
                 </div>
 
                 {/* 2. Eviction Pillar */}
-                <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-1 text-xs font-semibold text-muted-foreground mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                        {t('Eviction Protection', 'Protección Desalojo')}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                        {evictionPillar.badge}
-                      </span>
-                    </div>
-                    <div className="text-base font-extrabold text-foreground">
-                      {evictionPillar.title}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                      {evictionPillar.desc}
-                    </p>
+                <div className="rounded-2xl border border-border/80 border-l-4 border-l-emerald-500 bg-card p-5 sm:p-6 shadow-xs flex flex-col gap-3 min-h-[220px]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      {t('Eviction Protection', 'Protección Desalojo')}
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      {evictionPillar.badge}
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-border/40 text-[11px] text-primary font-medium">
+                  <div className="text-2xl font-black text-foreground">{evictionPillar.title}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{evictionPillar.desc}</p>
+                  <div className="pt-3 border-t border-border/40 text-xs text-primary font-mono font-semibold">
                     {evictionPillar.citation}
                   </div>
                 </div>
 
                 {/* 3. Deposit Cap Pillar */}
-                <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-1 text-xs font-semibold text-muted-foreground mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <Wallet className="size-3.5 text-blue-600 dark:text-blue-400" />
-                        {t('Security Deposit', 'Fianza / Depósito')}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                        {depositPillar.badge}
-                      </span>
-                    </div>
-                    <div className="text-base font-extrabold text-foreground">
-                      {depositPillar.title}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                      {depositPillar.desc}
-                    </p>
+                <div className="rounded-2xl border border-border/80 border-l-4 border-l-blue-500 bg-card p-5 sm:p-6 shadow-xs flex flex-col gap-3 min-h-[220px]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <Wallet className="size-4 text-blue-600 dark:text-blue-400" />
+                      {t('Security Deposit', 'Fianza / Depósito')}
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      {depositPillar.badge}
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-border/40 text-[11px] text-primary font-medium">
+                  <div className="text-2xl font-black text-foreground">{depositPillar.title}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{depositPillar.desc}</p>
+                  <div className="pt-3 border-t border-border/40 text-xs text-primary font-mono font-semibold">
                     {depositPillar.citation}
                   </div>
                 </div>
 
                 {/* 4. Algorithmic Ban Pillar */}
-                <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-1 text-xs font-semibold text-muted-foreground mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <SlidersHorizontal className="size-3.5 text-purple-600 dark:text-purple-400" />
-                        {t('Price-Fixing Software', 'Software de Precios')}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                        {pricingPillar.badge}
-                      </span>
-                    </div>
-                    <div className="text-base font-extrabold text-foreground">
-                      {pricingPillar.title}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                      {pricingPillar.desc}
-                    </p>
+                <div className="rounded-2xl border border-border/80 border-l-4 border-l-purple-500 bg-card p-5 sm:p-6 shadow-xs flex flex-col gap-3 min-h-[220px]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <SlidersHorizontal className="size-4 text-purple-600 dark:text-purple-400" />
+                      {t('Price-Fixing Software', 'Software de Precios')}
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      {pricingPillar.badge}
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-border/40 text-[11px] text-primary font-medium">
+                  <div className="text-2xl font-black text-foreground">{pricingPillar.title}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{pricingPillar.desc}</p>
+                  <div className="pt-3 border-t border-border/40 text-xs text-primary font-mono font-semibold">
                     {pricingPillar.citation}
                   </div>
                 </div>
@@ -1581,10 +1559,110 @@ export function LookupPage() {
                             .join(', ')}. Rigen las leyes estatales estándar.`
                         )}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {categoriesStandard.map((c) => {
+                          const Icon = c.icon;
+                          return (
+                            <span key={c.key} className="inline-flex items-center gap-1 rounded-full bg-secondary border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              <Icon className="size-3" />
+                              {es ? c.shortEs : c.shortEn}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* ── T1–T6 Pending Law Impact Panel ─────────────────────────── */}
+              {activeCategoryFilter === 'all' && (
+                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-5 mt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="size-4 text-blue-500" />
+                    <h3 className="font-bold text-sm text-foreground">
+                      {t('Pending & Future Law Impact (T1–T6 Change Scenarios)', 'Impacto de Leyes Pendientes — Escenarios T1–T6')}
+                    </h3>
+                    <Link to="/changes">
+                      <Button variant="outline" size="sm" className="ml-auto h-6 text-[10px] gap-1">
+                        <ArrowRight className="size-3" />
+                        {t('Full Change Tracker', 'Ver todos los cambios')}
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+                    {[
+                      { id: 'T1', status: 'effective', date: '2026-01-01', label: 'CA AB 325 / SB 763', desc: 'Algorithmic pricing ban — already in effect for this address.', color: 'emerald' },
+                      { id: 'T2', status: 'effective', date: '2026-09-01', label: 'Hoboken Ch. 158', desc: 'Local algorithmic-pricing ban — applies within Hoboken city limits only.', color: 'emerald' },
+                      { id: 'T3', status: 'not_yet_effective', date: '2027-01-01', label: 'NJ FAIR Act c.43', desc: 'Statewide NJ algorithmic pricing ban — not yet effective as of query date.', color: 'blue' },
+                      { id: 'T4', status: 'pending', date: 'Pending', label: 'MA S.2983 / H.5222', desc: 'MA algorithmic pricing bills remain in committee — not yet enacted.', color: 'purple' },
+                      { id: 'T5', status: 'struck', date: 'Struck 2026', label: 'MA Initiative 25-21', desc: 'Struck by SJC — has no legal effect.', color: 'slate' },
+                      { id: 'T6', status: 'effective', date: '2026-11-01', label: 'Cambridge Algorithmic Ord.', desc: 'Cambridge municipal ordinance banning algorithmic rent coordination.', color: 'amber' },
+                    ].map((tCase) => (
+                      <div key={tCase.id} className={`rounded-lg border bg-card p-3 ${
+                        tCase.status === 'effective' ? 'border-emerald-500/30' :
+                        tCase.status === 'not_yet_effective' ? 'border-blue-500/30' :
+                        tCase.status === 'pending' ? 'border-purple-500/30' :
+                        'border-slate-500/30'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono font-bold text-[11px] text-muted-foreground">{tCase.id}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            tCase.status === 'effective' ? 'bg-emerald-500/10 text-emerald-600' :
+                            tCase.status === 'not_yet_effective' ? 'bg-blue-500/10 text-blue-600' :
+                            tCase.status === 'pending' ? 'bg-purple-500/10 text-purple-600' :
+                            'bg-slate-500/10 text-slate-500'
+                          }`}>
+                            {tCase.status === 'effective' ? '✓ In Effect' : tCase.status === 'not_yet_effective' ? '⏳ Upcoming' : tCase.status === 'pending' ? '📋 Pending' : '✗ Struck'}
+                          </span>
+                        </div>
+                        <div className="font-semibold text-foreground text-[11px] mb-0.5">{tCase.label}</div>
+                        <p className="text-muted-foreground text-[11px] leading-snug">{tCase.desc}</p>
+                        <div className="mt-1 text-[10px] font-mono text-muted-foreground">{tCase.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Download / Share Report Footer ──────────────────────────── */}
+              <div className="rounded-2xl border border-border/70 bg-card p-5 mt-4 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-sm text-foreground">{t('Save or Share This Report', 'Guardar o Compartir este Informe')}</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {t(`${appliesCount} rules evaluated for ${address || 'this address'} as of ${format(date, 'yyyy-MM-dd')} · Strictly deterministic · No legal advice`, `${appliesCount} reglas evaluadas · Estrictamente determinista · No es asesoría legal`)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${window.location.origin}/lookup?address=${encodeURIComponent(address)}&asOf=${format(date, 'yyyy-MM-dd')}&units=${units}&year_built=${yearBuilt}`;
+                      navigator.clipboard.writeText(url);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary/80 transition-all"
+                  >
+                    <ArrowRight className="size-3.5" />
+                    {t('Copy Shareable Link', 'Copiar Enlace')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary/80 transition-all"
+                  >
+                    <FileText className="size-3.5" />
+                    {t('Print / Save as PDF', 'Imprimir / PDF')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCopilotOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-all"
+                  >
+                    <Sparkles className="size-3.5 text-purple-500" />
+                    {t('Ask AI About This Report', 'Preguntar a la IA')}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

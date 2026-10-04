@@ -40,7 +40,7 @@ export const Route = createFileRoute('/')({
   component: LandingPage,
 });
 
-export function LandingPage() {
+function LandingPage() {
   const { t, language } = useLang();
   const es = language === 'es';
 

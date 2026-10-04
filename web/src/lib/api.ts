@@ -107,33 +107,43 @@ export interface ChangeCaseItem {
 }
 
 export interface DocumentItem {
+  id: string;
   doc_id: string;
-  jurisdiction_id: string;
-  jurisdiction_level: string;
-  jurisdiction_name: string;
-  state: string;
   document_title: string;
-  source_url?: string;
-  local_path?: string;
+  jurisdiction: string;
+  jurisdiction_name: string;
+  jurisdiction_level: string;
+  state: string;
   category: string;
+  url: string;
   source_type: string;
-  word_count?: number;
-  snippet?: string;
+  capture: string;
+  retrieved_at?: string | null;
+  has_text: boolean;
+  character_count: number;
 }
 
 export interface RuleDetailItem {
   team_rule_id: string;
   source_doc_id: string;
   jurisdiction: string;
-  topic_category: string;
-  rule_title: string;
-  statutory_citation: string;
-  effective_date: string;
+  category?: string;
+  topic_category?: string;
+  title?: string;
+  rule_title?: string;
+  citation?: string;
+  statutory_citation?: string;
+  effective_date?: string | null;
   sunset_date?: string | null;
-  coverage_criteria: Record<string, any>;
+  coverage_criteria?: Record<string, any>;
   supersedes_rule_id?: string | null;
-  source_quote: string;
+  source_quote?: string;
+  quoted_span?: string;
   quote_verified?: boolean;
+  requirement?: string;
+  key_value?: string;
+  exemptions?: string;
+  source_url?: string;
 }
 
 /* ========================================================================= */
@@ -222,14 +232,22 @@ export async function fetchDocument(docId: string): Promise<DocumentItem> {
 }
 
 export async function fetchDocumentText(docId: string): Promise<{
+  id: string;
   doc_id: string;
   title: string;
   text: string;
+  text_slice: string;
   char_count: number;
+  character_count: number;
+  start: number;
+  end: number;
 }> {
   const res = await fetch(`${API_BASE}/documents/${docId}/text`);
   const json = await res.json();
-  return json.data;
+  const d = json.data;
+  // Normalise: backend exposes text_slice, alias as text too
+  if (d && !d.text) d.text = d.text_slice || '';
+  return d;
 }
 
 /* ========================================================================= */
@@ -353,6 +371,24 @@ export async function fetchChangeCases(): Promise<ChangeCaseItem[]> {
   } catch (err) {
     console.warn('Failed to fetch change cases from backend:', err);
     return [];
+  }
+}
+
+export interface ChangeCaseDetail {
+  affected_address_ids: string[];
+  conflict_flag_address_ids?: string[];
+  notes?: string;
+}
+
+export async function fetchChangeCaseDetail(caseId: string): Promise<ChangeCaseDetail | null> {
+  try {
+    const response = await fetch(`${API_BASE}/changes/cases/${caseId}`);
+    if (!response.ok) return null;
+    const json = await response.json();
+    return json.data || null;
+  } catch (err) {
+    console.warn(`Failed to fetch change case detail ${caseId}:`, err);
+    return null;
   }
 }
 

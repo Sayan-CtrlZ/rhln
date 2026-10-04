@@ -126,6 +126,32 @@ class RuleExtractionPipeline:
         logger.info("Extraction pipeline finished. Total verified rules: %d", len(all_rules))
         return all_rules
 
+    async def extract_from_file(
+        self,
+        file_path: str,
+        jurisdiction: str = "Cambridge, MA",
+        doc_id: Optional[str] = None,
+        force_refresh: bool = True,
+    ) -> List[OfficialRuleRecord]:
+        """Extracts and verifies rules from a standalone file (e.g. Hour-16 ordinance)."""
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            raw_text = f.read()
+
+        computed_doc_id = doc_id or f"D_HOUR16_{os.path.basename(file_path).split('.')[0].upper()}"
+        doc = DocumentMeta(
+            doc_id=computed_doc_id,
+            jurisdiction=jurisdiction,
+            url=f"file://{os.path.abspath(file_path)}",
+            source_type="ordinance",
+            capture="yes",
+            status="ok",
+            raw_text=raw_text,
+        )
+        return await self.extract_from_document(doc, force_refresh=force_refresh)
+
     def export_rules_json(self, rules: List[OfficialRuleRecord], output_path: str = "out/rules.json") -> str:
         """Exports verified rules into the official deliverable format rules.json."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -134,3 +160,4 @@ class RuleExtractionPipeline:
             f.write(deliverable.model_dump_json(indent=2))
         logger.info("Saved %d rules to %s", len(rules), output_path)
         return output_path
+

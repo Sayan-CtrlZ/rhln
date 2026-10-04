@@ -1,0 +1,32 @@
+SOURCE: https://www.cambridgema.gov/citycouncil/ordinances/2026/algorithmic-pricing-ban
+RETRIEVED: 2026-10-04 15:30 UTC
+
+CITY OF CAMBRIDGE
+IN CITY COUNCIL
+ORDINANCE NO. 2026-18
+
+AN ORDINANCE PROHIBITING THE USE OF ALGORITHMIC DEVICES TO SET, COORDINATE, OR RECOMMEND RESIDENTIAL RENTAL RATES IN THE CITY OF CAMBRIDGE.
+
+Be it ordained by the City Council of the City of Cambridge that the Cambridge Municipal Code is hereby amended by adding a new Chapter 8.75, entitled "Prohibition on Algorithmic Rental Pricing", to read as follows:
+
+Chapter 8.75 - PROHIBITION ON ALGORITHMIC RENTAL PRICING
+
+Section 8.75.010 - Findings and Purpose.
+The City Council finds that the use of algorithmic software that collects non-public, competitor pricing and occupancy data to coordinate or recommend residential rents diminishes fair market competition and inflates housing costs for Cambridge residents.
+
+Section 8.75.020 - Definitions.
+"Algorithmic Device" means any software program, algorithm, computer application, artificial intelligence model, or automated data system that uses non-public or aggregated competitor data to recommend, set, or adjust rental rates or lease terms.
+"Landlord" means any person, corporation, trust, partnership, or entity that owns, manages, or leases residential real property in the City of Cambridge.
+
+Section 8.75.030 - Prohibited Activities.
+(a) It shall be unlawful for any landlord or property management company operating in the City of Cambridge to use, subscribe to, or employ an algorithmic device to set, adjust, determine, or recommend residential rental pricing or unit occupancy levels.
+(b) No landlord shall enter into an agreement or arrangement with other housing providers or algorithmic pricing intermediaries to share non-public occupancy, pricing, or lease renewal data for rent coordination purposes.
+
+Section 8.75.040 - Exemptions.
+This Chapter shall not apply to single-family residential properties where the owner resides on the premises, nor to housing owned or operated by a public housing authority or higher education institution for student housing.
+
+Section 8.75.050 - Penalties and Enforcement.
+Any person or entity who violates any provision of this Chapter shall be subject to a fine of one thousand dollars ($1,000) per residential unit for each month during which the violation continues. The City Solicitor may institute civil proceedings to enjoin violations.
+
+Section 8.75.060 - Effective Date.
+This Ordinance shall take effect on January 1, 2027.

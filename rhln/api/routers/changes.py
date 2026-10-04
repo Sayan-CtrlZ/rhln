@@ -41,12 +41,13 @@ async def list_change_cases(
     res_t3 = engine.evaluate_t3()
     res_t4 = engine.evaluate_t4()
     res_t5 = engine.evaluate_t5()
+    res_t6 = engine.evaluate_t6()
 
     cases = [
         ChangeCaseItem(
             case_id="T1",
-            title="California AB 325 / SB 763 algorithmic pricing law takes effect",
-            description="Antitrust provisions targeting common algorithmic rent setting",
+            title="California Assembly Bill 325 and Senate Bill 763 algorithmic pricing law takes effect",
+            description="Antitrust provisions targeting rent setting through common pricing algorithms",
             as_of_before="2025-12-31",
             as_of_after="2026-01-02",
             target_jurisdiction="CA",
@@ -54,14 +55,14 @@ async def list_change_cases(
         ),
         ChangeCaseItem(
             case_id="T2",
-            title="Hoboken vs Jersey City municipal algorithmic pricing bans",
-            description="Strict municipal boundary enforcement: Hoboken Ord. ch. 158 vs JC Ord. § 218-12",
+            title="Hoboken versus Jersey City municipal algorithmic pricing bans",
+            description="Strict municipal boundary enforcement: Hoboken Ordinance Chapter 158 versus Jersey City Ordinance Section 218-12",
             target_jurisdiction="NJ",
             affected_address_count=len(res_t2.affected_address_ids),
         ),
         ChangeCaseItem(
             case_id="T3",
-            title="NJ FAIR Act: future effective date with local preemption conflict",
+            title="New Jersey FAIR Act: future effective date with local preemption conflict",
             description="Enacted statewide law with potential preemption of Hoboken and Jersey City ordinances",
             as_of_before="2026-10-01",
             as_of_after="2027-07-02",
@@ -71,17 +72,26 @@ async def list_change_cases(
         ),
         ChangeCaseItem(
             case_id="T4",
-            title="Massachusetts pending algorithmic rent bills S.2983 & H.5222",
-            description="Statewide pending bills not yet enacted; affected set shows impact if passed",
+            title="Massachusetts pending algorithmic rent bills: Senate Bill 2983 and House Bill 5222",
+            description="Statewide bills not yet enacted; the affected set shows the impact if they pass",
             target_jurisdiction="MA",
             affected_address_count=len(res_t4.affected_address_ids),
         ),
         ChangeCaseItem(
             case_id="T5",
-            title="Massachusetts rent-control ballot question struck by Supreme Judicial Court",
-            description="Negative test: Ballot initiative struck; M.G.L. c. 40P bars local rent control",
+            title="Massachusetts rent control ballot question struck down by the Supreme Judicial Court",
+            description="Negative test: the ballot initiative was struck down, and Massachusetts General Laws Chapter 40P bars local rent control",
             target_jurisdiction="MA",
             affected_address_count=0,
+        ),
+        ChangeCaseItem(
+            case_id="T6",
+            title="Fictional Cambridge municipal ordinance on algorithmic rent setting (Hour-16 Live Release)",
+            description="Live unaided extraction and simulation: future effective date modeled across all Cambridge addresses",
+            as_of_before="2026-10-01",
+            as_of_after="2027-01-02",
+            target_jurisdiction="MA",
+            affected_address_count=len(res_t6.affected_address_ids),
         ),
     ]
     return wrap_data(data=cases, request_id=request_id, total=len(cases))
@@ -101,6 +111,7 @@ async def get_change_case_detail(
         "T3": engine.evaluate_t3,
         "T4": engine.evaluate_t4,
         "T5": engine.evaluate_t5,
+        "T6": engine.evaluate_t6,
     }
     func = method_map.get(case_id.upper())
     if not func:
@@ -108,6 +119,7 @@ async def get_change_case_detail(
 
     result = func()
     return wrap_data(data=result.model_dump(exclude_none=True), request_id=request_id)
+
 
 
 @router.get("/export")

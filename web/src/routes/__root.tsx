@@ -170,10 +170,10 @@ function RootComponent() {
         <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
           {/* Top Legal Disclaimer (TRD P0 Mandatory Notice) - Shown on Dashboard & Inner Pages */}
           {!isLandingPage && (
-            <div className="border-b border-border bg-secondary/80 px-4 py-2 text-center text-xs font-semibold">
-              <div className="mx-auto flex max-w-[1600px] w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                <p className="flex items-center gap-2">
-                  <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />
+            <div className="border-b border-border/80 bg-secondary/90 px-4 py-3 text-center shadow-xs">
+              <div className="mx-auto flex max-w-[1600px] w-full items-center justify-center">
+                <p className="inline-flex items-center justify-center gap-2.5 text-sm sm:text-base font-semibold text-foreground tracking-tight">
+                  <TriangleAlert className="size-4.5 sm:size-5 shrink-0 text-amber-500" />
                   <span>
                     {t(
                       'Not legal advice. Summaries of public housing law. All rules cite verified verbatim statutory text.',
@@ -181,11 +181,6 @@ function RootComponent() {
                     )}
                   </span>
                 </p>
-                <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
-                  <span>Default As-Of: <strong>2026-10-01</strong></span>
-                  <span>·</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">FastAPI 1.0 Live</span>
-                </div>
               </div>
             </div>
           )}
@@ -210,136 +205,112 @@ function RootComponent() {
               {/* Navigation Bar: Landing Page Section Anchor Links VS Dashboard Functional Tabs */}
               {isLandingPage ? (
                 /* Landing Page Smooth-Scroll Navigation */
-                <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/70 text-xs font-semibold">
+                <nav className="hidden lg:flex items-center gap-1.5 bg-secondary/50 p-1.5 rounded-xl border border-border/70 text-sm font-semibold">
                   <a
                     href="#overview"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('Overview', 'Inicio')}
                   </a>
                   <a
                     href="#how-it-works"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('How It Works', 'Cómo Funciona')}
                   </a>
                   <a
                     href="#features"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('Capabilities', 'Capacidades')}
                   </a>
                   <a
                     href="#solutions"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('Who It\'s For', 'Para Quién Es')}
                   </a>
                   <a
                     href="#jurisdictions"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('Coverage', 'Cobertura')}
                   </a>
                   <a
                     href="#faq"
-                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                    className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
                   >
                     {t('FAQ', 'Preguntas')}
                   </a>
                 </nav>
               ) : (
-                /* Dashboard 6-Column Navigation Bar */
-                <nav className="hidden lg:grid grid-cols-6 gap-1.5 flex-1 max-w-3xl mx-3 rounded-xl border border-border/80 bg-secondary/50 p-1">
+                /* Dashboard 6-Column Navigation Bar - Enhanced Size */
+                <nav className="hidden lg:grid grid-cols-6 gap-2 flex-1 max-w-4xl mx-4 rounded-xl border border-border/80 bg-secondary/50 p-1.5">
                   <Link
                     to="/lookup"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <Search className="size-3.5 shrink-0" />
+                    <Search className="size-4 shrink-0" />
                     <span>{t('Lookup', 'Consulta')}</span>
                   </Link>
                   <Link
                     to="/changes"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <History className="size-3.5 shrink-0" />
+                    <History className="size-4 shrink-0" />
                     <span>{t('Changes', 'Cambios')}</span>
                   </Link>
                   <Link
                     to="/jurisdictions"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <Landmark className="size-3.5 shrink-0" />
+                    <Landmark className="size-4 shrink-0" />
                     <span>{t('Jurisdictions', 'Jurisdicciones')}</span>
                   </Link>
                   <Link
                     to="/rules"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <Scale className="size-3.5 shrink-0" />
+                    <Scale className="size-4 shrink-0" />
                     <span>{t('Rules', 'Reglas')}</span>
                   </Link>
                   <Link
                     to="/documents"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <Library className="size-3.5 shrink-0" />
+                    <Library className="size-4 shrink-0" />
                     <span>{t('Corpus', 'Corpus')}</span>
                   </Link>
                   <Link
                     to="/api"
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                    className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
                   >
-                    <Terminal className="size-3.5 shrink-0" />
+                    <Terminal className="size-4 shrink-0" />
                     <span>{t('API & Docs', 'API y Docs')}</span>
                   </Link>
                 </nav>
               )}
 
               {/* Utility Actions & Primary CTA Button */}
-              <div className="flex items-center gap-2 shrink-0">
-                {isLandingPage ? (
+              <div className="flex items-center gap-3 shrink-0">
+                {isLandingPage && (
                   /* Landing Page CTA Button */
                   <Link
                     to="/lookup"
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
                   >
                     <span>{t('Launch Dashboard', 'Iniciar Panel')}</span>
-                    <ArrowRight className="size-3.5" />
+                    <ArrowRight className="size-4" />
                   </Link>
-                ) : (
-                  /* Dashboard Actions */
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setAiCopilotOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all shadow-2xs shrink-0"
-                      title={t('Open AI Legal Copilot (Claude)', 'Abrir Asistente Legal de IA')}
-                    >
-                      <Sparkles className="size-3.5 text-purple-500 animate-pulse" />
-                      <span className="hidden sm:inline">{t('Ask AI Copilot', 'Asistente IA')}</span>
-                    </button>
-
-                    <a
-                      href={`${SERVER_ROOT}/docs`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hidden md:inline-flex items-center gap-1 rounded-md border border-border bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 shrink-0"
-                      title="Open FastAPI Swagger Interactive Docs"
-                    >
-                      <Code2 className="size-3" />
-                      <span>/docs</span>
-                    </a>
-                  </>
                 )}
 
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                  className="h-8 gap-1 px-2 text-xs font-semibold shrink-0"
+                  className="h-9 gap-1.5 px-3 text-xs font-semibold shrink-0"
                 >
-                  <Globe2 className="size-3.5" />
+                  <Globe2 className="size-4" />
                   <span>{language === 'en' ? 'EN' : 'ES'}</span>
                 </Button>
 
@@ -347,7 +318,7 @@ function RootComponent() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setDark(!dark)}
-                  className="size-8 shrink-0"
+                  className="size-9 shrink-0"
                 >
                   {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
                 </Button>

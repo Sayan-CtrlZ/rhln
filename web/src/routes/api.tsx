@@ -22,7 +22,7 @@ export const Route = createFileRoute('/api')({
   component: ApiPage,
 });
 
-export function ApiPage() {
+function ApiPage() {
   const { t } = useLang();
 
   const [serverHealth, setServerHealth] = useState<any>(null);
@@ -141,7 +141,7 @@ export function ApiPage() {
               download="changes.json"
               className="inline-flex items-center justify-between rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-xs font-mono hover:bg-secondary"
             >
-              <span>out/changes.json (T1–T5)</span>
+              <span>out/changes.json (T1–T6)</span>
               <Download className="size-3 text-muted-foreground" />
             </a>
             <a
@@ -234,7 +234,7 @@ export function ApiPage() {
               <tr className="hover:bg-secondary/30">
                 <td className="px-4 py-2.5 font-bold text-emerald-500">GET</td>
                 <td className="px-4 py-2.5 font-bold">/api/v1/changes/cases</td>
-                <td className="px-4 py-2.5 font-sans text-muted-foreground">List benchmark statutory change cases T1 through T5</td>
+                <td className="px-4 py-2.5 font-sans text-muted-foreground">List benchmark statutory change cases T1 through T6</td>
                 <td className="px-4 py-2.5">TRD 8.3 (P0)</td>
               </tr>
               <tr className="hover:bg-secondary/30">

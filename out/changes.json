@@ -252,7 +252,7 @@
       "A0499",
       "A0500"
     ],
-    "notes": "California AB 325 / SB 763 on common pricing algorithms took effect 2026-01-01. Evaluates as not_yet_effective on 2025-12-31 and applies on 2026-01-02 across all 250 CA addresses."
+    "notes": "California Assembly Bill 325 and Senate Bill 763 on common pricing algorithms took effect on January 1, 2026. The rule evaluates as not yet effective on December 31, 2025 and applies on January 2, 2026 across all 250 California addresses."
   },
   "T2": {
     "affected_address_ids": [
@@ -347,7 +347,7 @@
       "A0490",
       "A0495"
     ],
-    "notes": "Local municipal bans apply strictly within city limits: Hoboken Ord. ch. 158 covers 40 Hoboken addresses; Jersey City Ord. \u00a7 218-12 covers 50 Jersey City addresses. 0 Newark addresses covered."
+    "notes": "Local municipal bans apply strictly within city limits: Hoboken Ordinance Chapter 158 covers 40 Hoboken addresses; Jersey City Ordinance Section 218-12 covers 50 Jersey City addresses. No Newark addresses are covered."
   },
   "T3": {
     "affected_address_ids": [
@@ -584,7 +584,7 @@
       "A0490",
       "A0495"
     ],
-    "notes": "NJ FAIR Act (P.L. 2026, c. 43) is not_yet_effective as of 2026-10-01 and applies on 2027-07-02 for all 140 NJ addresses. Flagged potential preemption conflict for human review on all 90 Hoboken and Jersey City addresses."
+    "notes": "The New Jersey FAIR Act (Public Law 2026, Chapter 43) is not yet effective as of October 1, 2026 and applies on July 2, 2027 for all 140 New Jersey addresses. A potential preemption conflict is flagged for human review on all 90 Hoboken and Jersey City addresses."
   },
   "T4": {
     "affected_address_ids": [
@@ -699,10 +699,65 @@
       "A0485",
       "A0488"
     ],
-    "notes": "Massachusetts algorithmic rent pricing bills S.2983 and H.5222 remain pending legislative proposals. Reported as pending across all 110 Boston and Cambridge addresses; affected set represents impact if enacted."
+    "notes": "Massachusetts algorithmic rent pricing bills Senate Bill 2983 and House Bill 5222 remain pending legislative proposals. They are reported as pending across all 110 Boston and Cambridge addresses; the affected set represents the impact if enacted."
   },
   "T5": {
     "affected_address_ids": [],
-    "notes": "Massachusetts Initiative Petition 25-21 was struck by the Supreme Judicial Court on June 23, 2026. Under M.G.L. c. 40P, local rent control is barred statewide. Affected set is empty."
+    "notes": "Massachusetts Initiative Petition 25-21 was struck down by the Supreme Judicial Court on June 23, 2026. Under Massachusetts General Laws Chapter 40P, local rent control is barred statewide. The affected set is empty."
+  },
+  "T6": {
+    "affected_address_ids": [
+      "A0009",
+      "A0010",
+      "A0015",
+      "A0024",
+      "A0034",
+      "A0039",
+      "A0043",
+      "A0046",
+      "A0064",
+      "A0070",
+      "A0071",
+      "A0073",
+      "A0075",
+      "A0077",
+      "A0082",
+      "A0086",
+      "A0095",
+      "A0124",
+      "A0166",
+      "A0174",
+      "A0175",
+      "A0176",
+      "A0191",
+      "A0199",
+      "A0209",
+      "A0214",
+      "A0218",
+      "A0230",
+      "A0232",
+      "A0272",
+      "A0284",
+      "A0286",
+      "A0290",
+      "A0291",
+      "A0292",
+      "A0294",
+      "A0298",
+      "A0300",
+      "A0301",
+      "A0302",
+      "A0306",
+      "A0336",
+      "A0339",
+      "A0342",
+      "A0361",
+      "A0422",
+      "A0453",
+      "A0465",
+      "A0468",
+      "A0485"
+    ],
+    "notes": "Synthetic Cambridge municipal ordinance ('Cambridge Municipal Ordinance on Algorithmic Rent Coordination') takes effect on 2027-01-01. The rule evaluates as not yet effective as of October 1, 2026 and applies after the effective date across all 50 Cambridge addresses. Zero Boston or New Jersey addresses are affected."
   }
 }
