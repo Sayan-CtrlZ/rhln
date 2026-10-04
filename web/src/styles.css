@@ -1,0 +1,293 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system: "Warm & Accessible" (Airbnb style), document-first and restrained.
+ *
+ * Near-white page, white cards, crisp small radii (4-10px), one soft diffused
+ * shadow, and a deliberately quiet palette: color is reserved for status only
+ * (sage green "Applies", soft amber "Unknown") and for the teal action button.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-applies: var(--applies);
+  --color-unknown: var(--unknown);
+  --color-upcoming: var(--upcoming);
+  --color-chip-foreground: var(--chip-foreground);
+  --color-applies-surface: var(--applies-surface);
+  --color-applies-surface-border: var(--applies-surface-border);
+  --color-panel-surface: var(--panel-surface);
+  --color-panel-header: var(--panel-header);
+}
+
+:root {
+  /* Crisp corners: rounded-md 4px, rounded-lg 6px, rounded-xl 10px */
+  --radius: 0.375rem;
+  /* Near-white page, white cards, high-contrast ink text */
+  --background: oklch(0.993 0.003 85);
+  --foreground: oklch(0.22 0.02 55);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  /* Deep teal buttons: strong contrast on the near-white page */
+  --primary: oklch(0.43 0.08 190);
+  --primary-foreground: oklch(0.99 0.005 190);
+  --secondary: oklch(0.962 0.008 85);
+  --secondary-foreground: oklch(0.26 0.02 55);
+  --muted: oklch(0.962 0.008 85);
+  --muted-foreground: oklch(0.42 0.02 55);
+  --accent: oklch(0.955 0.012 80);
+  --accent-foreground: oklch(0.24 0.02 55);
+  --destructive: oklch(0.52 0.16 28);
+  --destructive-foreground: oklch(0.985 0.006 85);
+  --border: oklch(0.885 0.012 80);
+  --input: oklch(0.855 0.014 78);
+  --ring: oklch(0.43 0.08 190);
+  /* Status colors are desaturated: they signal, they do not decorate */
+  --applies: oklch(0.5 0.06 155);
+  --unknown: oklch(0.55 0.07 75);
+  --upcoming: oklch(0.5 0.05 240);
+  --chip-foreground: oklch(0.99 0.004 85);
+  /* Very light sage wash behind "Applies" result cards */
+  --applies-surface: oklch(0.976 0.014 155);
+  --applies-surface-border: oklch(0.86 0.035 155);
+  /* Source panel: a quiet inset column with a card sitting on it */
+  --panel-surface: oklch(0.978 0.006 85);
+  --panel-header: oklch(0.955 0.01 85);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.99 0.004 85);
+  --sidebar-foreground: oklch(0.22 0.02 55);
+  --sidebar-primary: oklch(0.43 0.08 190);
+  --sidebar-primary-foreground: oklch(0.99 0.005 190);
+  --sidebar-accent: oklch(0.955 0.012 80);
+  --sidebar-accent-foreground: oklch(0.24 0.02 55);
+  --sidebar-border: oklch(0.885 0.012 80);
+  --sidebar-ring: oklch(0.43 0.08 190);
+}
+
+.dark {
+  /* True near-black: neutral hue, almost no warm tint */
+  --background: oklch(0.14 0.004 55);
+  --foreground: oklch(0.96 0.004 85);
+  --card: oklch(0.185 0.005 55);
+  --card-foreground: oklch(0.96 0.004 85);
+  --popover: oklch(0.185 0.005 55);
+  --popover-foreground: oklch(0.96 0.004 85);
+  --primary: oklch(0.82 0.09 190);
+  --primary-foreground: oklch(0.14 0.004 55);
+  --secondary: oklch(0.235 0.006 55);
+  --secondary-foreground: oklch(0.96 0.004 85);
+  --muted: oklch(0.235 0.006 55);
+  --muted-foreground: oklch(0.76 0.008 70);
+  --accent: oklch(0.26 0.006 55);
+  --accent-foreground: oklch(0.96 0.004 85);
+  --destructive: oklch(0.68 0.15 28);
+  --destructive-foreground: oklch(0.98 0.006 85);
+  --border: oklch(0.95 0.004 85 / 20%);
+  --input: oklch(0.95 0.004 85 / 30%);
+  --ring: oklch(0.82 0.09 190);
+  --applies: oklch(0.74 0.07 155);
+  --unknown: oklch(0.76 0.08 75);
+  --upcoming: oklch(0.74 0.06 240);
+  --chip-foreground: oklch(0.14 0.004 55);
+  /* Sage wash stays visible but quiet on near-black */
+  --applies-surface: oklch(0.205 0.02 155);
+  --applies-surface-border: oklch(0.74 0.07 155 / 35%);
+  /* Panel column and card header sit one step above the page */
+  --panel-surface: oklch(0.17 0.004 55);
+  --panel-header: oklch(0.215 0.005 55);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.185 0.005 55);
+  --sidebar-foreground: oklch(0.96 0.004 85);
+  --sidebar-primary: oklch(0.82 0.09 190);
+  --sidebar-primary-foreground: oklch(0.14 0.004 55);
+  --sidebar-accent: oklch(0.26 0.006 55);
+  --sidebar-accent-foreground: oklch(0.96 0.004 85);
+  --sidebar-border: oklch(0.95 0.004 85 / 20%);
+  --sidebar-ring: oklch(0.82 0.09 190);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Soft white card: hairline border plus one gentle diffused shadow. */
+@utility edge {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  box-shadow: 0 1px 2px oklch(0.4 0.02 55 / 4%), 0 6px 14px -10px oklch(0.4 0.02 55 / 22%);
+}
+
+/* Raised on hover: same border, slightly deeper soft shadow. */
+@utility lift {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  box-shadow: 0 1px 2px oklch(0.4 0.02 55 / 6%), 0 10px 20px -14px oklch(0.4 0.02 55 / 30%);
+}
+
+/* The source panel: a card with one steady, low shadow. */
+@utility panel {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  box-shadow: 0 1px 2px oklch(0.4 0.02 55 / 5%), 0 12px 30px -20px oklch(0.4 0.02 55 / 28%);
+}
+
+/* Form fields: soft white inputs with a quiet focus ring. */
+@utility field {
+  border: 1px solid var(--color-input);
+  background-color: var(--color-card);
+  color: var(--color-foreground);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  &:focus {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 22%, transparent);
+  }
+  &::placeholder {
+    color: var(--color-muted-foreground);
+  }
+}
+
+/* Status chips: quiet solid fills so status reads at a glance. */
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Quoted source text: a plain set-off excerpt, no code styling. */
+@utility excerpt {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  background-color: var(--color-secondary);
+  padding: 0.875rem 1rem;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* "Applies" results sit on a very light sage wash so they read as confirmed.
+   Written outside any cascade layer so it also holds while hovering. */
+.rule-list > button[data-status="applies"] {
+  background-color: var(--color-applies-surface);
+  border-color: var(--color-applies-surface-border);
+}
+
+/* The selected rule is marked by its own border, not a generic ring. */
+.rule-list > button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 1px 2px oklch(0.4 0.02 55 / 6%), 0 10px 20px -14px oklch(0.4 0.02 55 / 26%);
+}
+
+.rule-list > * {
+  animation: rule-enter 0.35s backwards cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.rule-list > :nth-child(2) { animation-delay: 0.05s; }
+.rule-list > :nth-child(3) { animation-delay: 0.1s; }
+.rule-list > :nth-child(4) { animation-delay: 0.15s; }
+.rule-list > :nth-child(5) { animation-delay: 0.2s; }
+
+.source-panel[data-state="open"] {
+  animation: panel-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.source-panel[data-state="closed"] {
+  animation: panel-exit 0.16s ease-in;
+}
+
+@keyframes rule-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes panel-enter {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes panel-exit {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
