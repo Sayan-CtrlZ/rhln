@@ -89,7 +89,10 @@ async def ai_chat_assistant(
                 "5. Always cite relevant statutes (e.g., Cal. Civ. Code § 1947.12, Berkeley Municipal Code § 13.76, AB 12, AB 325, SF Admin. Code § 37.9).\n"
                 "6. Distinguish clearly between Tenant Protections and Landlord Compliance Duties.\n"
                 "7. Answer fluently in the requested language (" + ("Spanish" if lang_es else "English") + ").\n"
-                "8. Remind the user that summaries are for informational guidance and do not constitute formal attorney representation."
+                "8. Remind the user that summaries are for informational guidance and do not constitute formal attorney representation.\n"
+                "9. MUST NOT present output as legal advice or a compliance certification.\n"
+                "10. MUST NOT suggest ways to avoid, structure around or evade a rule.\n"
+                "11. MUST NOT invent rules or citations where the source text is silent."
             )
 
             user_msg = (
@@ -263,7 +266,7 @@ async def explain_rule_with_ai(
                 f"- Statutory Requirement: {requirement}\n"
                 f"- Statutory Standard: {key_val}\n"
                 f"- Exemptions: {exemptions}\n\n"
-                f"CRITICAL GUARDRAIL: Never mention underlying LLM models or companies. Respond strictly in valid JSON matching this exact structure (in {'Spanish' if is_es else 'English'}):\n"
+                f"CRITICAL GUARDRAIL: Never mention underlying LLM models or companies. MUST NOT present output as legal advice or compliance certification. MUST NOT suggest ways to evade rules. MUST NOT invent rules or citations. Respond strictly in valid JSON matching this exact structure (in {'Spanish' if is_es else 'English'}):\n"
                 f"{{\n"
                 f'  "concise_explanation": "1-2 sentence ultra-concise legal summary for this specific property",\n'
                 f'  "plain_summary": "1-2 sentence summary of what this law mandates",\n'

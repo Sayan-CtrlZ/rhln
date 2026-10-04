@@ -75,6 +75,7 @@ export function AICopilotDrawer({
       text: string;
       citations?: string[];
       model?: string;
+      confidence?: number;
     }>
   >([
     {
@@ -113,6 +114,7 @@ export function AICopilotDrawer({
           text: res.answer,
           citations: res.citations,
           model: res.model_used,
+          confidence: res.confidence,
         },
       ]);
     } catch (err: any) {
@@ -223,8 +225,13 @@ export function AICopilotDrawer({
                 )}
 
                 {m.model && (
-                  <div className="mt-2 text-[10px] text-muted-foreground flex items-center justify-between">
+                  <div className="mt-2 text-[10px] text-muted-foreground flex items-center justify-between border-t border-border/40 pt-2">
                     <span>{m.model}</span>
+                    {m.confidence !== undefined && (
+                      <span className="flex items-center gap-1 font-mono text-emerald-600 dark:text-emerald-400">
+                        {t('Confidence:', 'Confianza:')} {(m.confidence * 100).toFixed(1)}%
+                      </span>
+                    )}
                     <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
                       <ShieldCheck className="size-2.5" />
                       {t('Grounded in Corpus', 'Fundamentado en Corpus')}

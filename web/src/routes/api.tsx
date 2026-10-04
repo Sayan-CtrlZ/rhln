@@ -7,6 +7,11 @@ import {
   Database,
   ArrowUpRight,
   ExternalLink,
+  ShieldCheck,
+  CheckCircle2,
+  RefreshCw,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 import { useLang } from './__root';
 import {
@@ -15,7 +20,11 @@ import {
   EXPORT_URLS,
   fetchHealth,
   fetchMeta,
+  fetchAuditEvents,
+  verifyAuditChain,
   type MetaResponse,
+  type AuditEvent,
+  type AuditVerifyResult,
 } from '@/lib/api';
 
 export const Route = createFileRoute('/api')({
@@ -27,11 +36,28 @@ function ApiPage() {
 
   const [serverHealth, setServerHealth] = useState<any>(null);
   const [metaInfo, setMetaInfo] = useState<MetaResponse | null>(null);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditResult, setAuditResult] = useState<AuditVerifyResult | null>(null);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     fetchHealth().then(setServerHealth).catch(() => setServerHealth({ status: 'offline' }));
     fetchMeta().then(setMetaInfo).catch(() => null);
+    fetchAuditEvents().then(setAuditEvents).catch(() => null);
+    verifyAuditChain().then(setAuditResult).catch(() => null);
   }, []);
+
+  const handleVerifyChain = async () => {
+    setVerifying(true);
+    try {
+      const res = await verifyAuditChain();
+      setAuditResult(res);
+      const evts = await fetchAuditEvents();
+      setAuditEvents(evts);
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-[1600px] w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -190,6 +216,116 @@ function ApiPage() {
               X-Disclaimer: Not legal advice. Summarizes public law.
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Cryptographic Audit Log & Provenance Verification (TRD Section 12) */}
+      <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <Lock className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground font-display flex items-center gap-2">
+                <span>{t('Cryptographic Audit Log & Tamper-Proof Chain', 'Registro Criptográfico Inmutable')}</span>
+                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  SHA-256
+                </span>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  'Append-only cryptographic hash chain maintaining an auditable log of sources, model outputs, and changes.',
+                  'Cadena de bloques criptográfica que mantiene un registro auditable de fuentes, extracciones y cambios.'
+                )}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleVerifyChain}
+            disabled={verifying}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs self-start sm:self-auto disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`size-3.5 ${verifying ? 'animate-spin' : ''}`} />
+            <span>{verifying ? t('Verifying Chain...', 'Verificando...') : t('Verify Chain Integrity', 'Verificar Integridad')}</span>
+          </button>
+        </div>
+
+        {/* Verification Status Banner */}
+        {auditResult && (
+          <div
+            className={`mt-4 rounded-xl border p-4 text-xs flex items-start gap-3 ${
+              auditResult.verified
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200'
+                : 'border-red-500/30 bg-red-500/10 text-red-900 dark:text-red-200'
+            }`}
+          >
+            {auditResult.verified ? (
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="size-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-1">
+              <span className="font-bold block">
+                {auditResult.verified
+                  ? t('Audit Chain Cryptographically Verified Intact', 'Cadena de Auditoría Verificada Intacta')
+                  : t('Integrity Warning: Chain Mismatch Detected', 'Advertencia de Integridad Detectada')}
+              </span>
+              <p className="opacity-90">{auditResult.message}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Chain Stats */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-3 text-xs">
+          <div className="rounded-xl border border-border/80 bg-secondary/30 p-3">
+            <span className="text-muted-foreground block text-[11px]">{t('Total Events Logged', 'Eventos Registrados')}</span>
+            <span className="text-lg font-bold font-mono text-foreground">{auditEvents.length || auditResult?.total_events || 0}</span>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-secondary/30 p-3 overflow-hidden">
+            <span className="text-muted-foreground block text-[11px]">{t('Genesis Hash', 'Hash Génesis')}</span>
+            <span className="font-mono text-[11px] text-foreground block truncate" title={auditResult?.genesis_hash}>
+              {auditResult?.genesis_hash ? `${auditResult.genesis_hash.slice(0, 16)}...` : '0000000000000000...'}
+            </span>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-secondary/30 p-3 overflow-hidden">
+            <span className="text-muted-foreground block text-[11px]">{t('Tip Hash (Latest Block)', 'Hash del Último Bloque')}</span>
+            <span className="font-mono text-[11px] text-primary font-semibold block truncate" title={auditResult?.tip_hash}>
+              {auditResult?.tip_hash ? `${auditResult.tip_hash.slice(0, 16)}...` : 'Calculating...'}
+            </span>
+          </div>
+        </div>
+
+        {/* Recent Audit Events Table */}
+        <div className="mt-5 overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border bg-secondary/60 text-muted-foreground uppercase text-[11px] font-bold">
+              <tr>
+                <th className="px-3 py-2.5">Block #</th>
+                <th className="px-3 py-2.5">{t('Timestamp', 'Fecha/Hora')}</th>
+                <th className="px-3 py-2.5">{t('Actor', 'Actor')}</th>
+                <th className="px-3 py-2.5">{t('Action', 'Acción')}</th>
+                <th className="px-3 py-2.5">{t('Entity', 'Entidad')}</th>
+                <th className="px-3 py-2.5 font-mono">SHA-256 Hash</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border bg-card font-mono text-[11px]">
+              {auditEvents.slice(-6).map((evt) => (
+                <tr key={evt.id} className="hover:bg-secondary/30">
+                  <td className="px-3 py-2 font-bold text-foreground">#{evt.id}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{evt.ts.slice(0, 19).replace('T', ' ')}</td>
+                  <td className="px-3 py-2 text-primary font-sans font-semibold">{evt.actor}</td>
+                  <td className="px-3 py-2 text-foreground">{evt.action}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{evt.entity_id || evt.entity_type || 'system'}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono" title={evt.hash}>
+                    {evt.hash.slice(0, 12)}...
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

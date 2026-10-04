@@ -38,6 +38,7 @@ class OfficialRuleRecord(BaseModel):
     source_doc_id: Optional[str] = Field(default=None, description="doc_id from corpus_manifest.csv")
     source_url: str = Field(..., description="Source URL")
     quoted_span: str = Field(..., min_length=20, description="Exact text verbatim copied from source document")
+    retrieval_date: Optional[str] = Field(default=None, description="ISO retrieval timestamp from corpus manifest")
     confidence: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
     conflict_flag: bool = Field(default=False)
     conflict_note: Optional[str] = Field(default=None)
@@ -56,6 +57,8 @@ class AddressLookupRuleResult(BaseModel):
     result: LookupResultStatus
     explanation: str
     conflict_flag: bool = False
+    confidence: float = 1.0
+    review_required: bool = False
 
 
 class LookupsDeliverable(BaseModel):

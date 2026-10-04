@@ -249,7 +249,7 @@ function LookupPage() {
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'applies' | 'unknown' | 'superseded'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'applies' | 'unknown' | 'superseded' | 'pending' | 'conflicts'>('all');
 
   // Real Data State
   const [evaluatedRules, setEvaluatedRules] = useState<BackendRuleEvaluation[]>([]);
@@ -587,9 +587,16 @@ function LookupPage() {
   const upcomingCount = evaluatedRules.filter(
     (r) => r.result === 'not_yet_effective' || r.result === 'pending'
   ).length;
+  const conflictCount = evaluatedRules.filter((r) => r.conflict_flag).length;
 
   const filteredRules = evaluatedRules.filter((rule) => {
-    if (statusFilter !== 'all' && rule.result !== statusFilter) return false;
+    if (statusFilter === 'conflicts') {
+      if (!rule.conflict_flag) return false;
+    } else if (statusFilter === 'pending') {
+      if (rule.result !== 'not_yet_effective' && rule.result !== 'pending') return false;
+    } else if (statusFilter !== 'all' && rule.result !== statusFilter) {
+      return false;
+    }
     if (activeCategoryFilter !== 'all' && (rule.category || 'rent_increase_limits') !== activeCategoryFilter) {
       return false;
     }
@@ -1184,6 +1191,36 @@ function LookupPage() {
                   </button>
                 )}
 
+                {upcomingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      statusFilter === 'pending'
+                        ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                        : 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 hover:bg-blue-500/20'
+                    }`}
+                  >
+                    <Clock className="size-3.5" />
+                    <span>{upcomingCount} {t('Pending / Future Law', 'Leyes Pendientes')}</span>
+                  </button>
+                )}
+
+                {conflictCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === 'conflicts' ? 'all' : 'conflicts')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      statusFilter === 'conflicts'
+                        ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20 hover:bg-purple-500/20'
+                    }`}
+                  >
+                    <AlertTriangle className="size-3.5" />
+                    <span>{conflictCount} {t('Conflict / Review Flagged', 'Conflictos Flag')}</span>
+                  </button>
+                )}
+
                 {statusFilter !== 'all' && (
                   <button
                     type="button"
@@ -1255,6 +1292,29 @@ function LookupPage() {
               </div>
             </div>
           </div>
+
+          {/* Human Review & Conflict Alert Banner (Requirement 4) */}
+          {!loading && searched && conflictCount > 0 && (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 sm:p-5 flex items-start gap-3 shadow-xs">
+              <AlertTriangle className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-amber-900 dark:text-amber-200 text-sm">
+                    {t('Human Legal Review Advisory', 'Aviso de Revisión Legal Humana')}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                    {conflictCount} {t('Preemption Conflicts Detected', 'Conflictos de Preempción Detectados')}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Municipal ordinance provisions in this jurisdiction interact with or override baseline state statutes. These rules have been flagged for human review below.',
+                    'Las ordenanzas municipales en esta jurisdicción interactúan o anulan estatutos estatales de base. Estas reglas han sido marcadas para revisión humana.'
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Executive Summary Takeaways Scorecard */}
           {!loading && searched && (
@@ -1430,9 +1490,37 @@ function LookupPage() {
                                   <span className="font-mono text-[11px] text-muted-foreground bg-secondary/80 px-1.5 py-0.5 rounded">
                                     {rule.team_rule_id}
                                   </span>
+                                  {rule.retrieval_date && (
+                                    <>
+                                      <span>·</span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {t('Retrieved', 'Recuperado')}: {rule.retrieval_date.slice(0, 10)}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                              <StatusBadge status={rule.result} es={es} />
+                              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                {rule.conflict_flag && (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                    <AlertTriangle className="size-3" />
+                                    {t('Conflict Flagged', 'Conflicto')}
+                                  </span>
+                                )}
+                                {rule.review_required && !rule.conflict_flag && (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    <HelpCircle className="size-3" />
+                                    {t('Review Required', 'Revisión')}
+                                  </span>
+                                )}
+                                {rule.confidence !== undefined && (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <ShieldCheck className="size-3" />
+                                    {Math.round(rule.confidence * 100)}% {t('Confidence', 'Confianza')}
+                                  </span>
+                                )}
+                                <StatusBadge status={rule.result} es={es} />
+                              </div>
                             </div>
 
                             {/* Headline Key Parameter Pill (if defined) */}
@@ -1799,13 +1887,26 @@ function LookupPage() {
                 ) : sourceData ? (
                   <div className="space-y-4">
                     <div>
-                      <span className="text-[11px] font-mono text-primary font-bold">
-                        {sourceData.rule_id}
-                      </span>
-                      <h3 className="text-base font-bold mt-0.5">{sourceData.citation}</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono text-primary font-bold">
+                          {sourceData.rule_id}
+                        </span>
+                        {sourceData.retrieval_date && (
+                          <span className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground border border-border">
+                            <CalendarDays className="size-2.5 text-primary" />
+                            {t('Retrieved:', 'Fecha de captura:')} {sourceData.retrieval_date}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold mt-1 text-foreground">{sourceData.citation}</h3>
+                      {sourceData.document_title && (
+                        <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+                          {sourceData.document_title}
+                        </p>
+                      )}
                       {sourceData.doc_id && (
-                        <span className="text-xs text-muted-foreground block mt-0.5">
-                          Corpus Document: <span className="font-mono font-medium">{sourceData.doc_id}</span>
+                        <span className="text-[11px] text-muted-foreground block mt-1">
+                          {t('Corpus Manifest ID:', 'ID en Manifiesto:')} <span className="font-mono font-bold text-foreground">{sourceData.doc_id}</span>
                         </span>
                       )}
                     </div>

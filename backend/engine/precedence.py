@@ -60,6 +60,8 @@ class PrecedenceResolver:
                         result="superseded",
                         explanation=f"Statewide rent cap yields to local municipal rent ordinance ({local_rent_rule_id}) at this address.",
                         conflict_flag=eval_res.conflict_flag,
+                        confidence=eval_res.confidence,
+                        review_required=eval_res.review_required,
                     )
                 )
                 continue

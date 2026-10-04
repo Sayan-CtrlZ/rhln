@@ -170,33 +170,47 @@ class PredicateEvaluator:
         """Parses common statutory conditions expressed as natural text."""
         lower = text.lower()
 
-        # Check for certificate of occupancy / year built cutoffs
-        # e.g., "1979" (San Francisco cutoff 1979-06-13) or "1978" (Los Angeles cutoff 1978-10-01)
+        # 1. Building Age / Year Built / Certificate of Occupancy
         year_built = facts.get("year_built")
-        if "1979" in lower:
+        if any(kw in lower for kw in ["1979", "1978", "1980", "certificate of occupancy", "new construction", "15-year", "15 years", "built before", "construction date"]):
             if year_built is None:
                 return TriBool.UNKNOWN
-            # Cutoff year boundary edge case (1979 is cutoff year): return UNKNOWN if in cutoff year
-            if year_built == 1979:
-                return TriBool.UNKNOWN
-            return TriBool.TRUE if year_built < 1979 else TriBool.FALSE
+            if "1979" in lower:
+                if year_built == 1979:
+                    return TriBool.UNKNOWN
+                return TriBool.TRUE if year_built < 1979 else TriBool.FALSE
+            if "1978" in lower:
+                if year_built == 1978:
+                    return TriBool.UNKNOWN
+                return TriBool.TRUE if year_built < 1978 else TriBool.FALSE
+            if "15-year" in lower or "15 years" in lower:
+                # Rolling 15-year exemption relative to 2026
+                return TriBool.TRUE if year_built <= 2011 else TriBool.FALSE
 
-        if "1978" in lower:
-            if year_built is None:
-                return TriBool.UNKNOWN
-            if year_built == 1978:
-                return TriBool.UNKNOWN
-            return TriBool.TRUE if year_built < 1978 else TriBool.FALSE
-
-        # Check for unit counts (e.g., "5 or more units", "2 or fewer", "4 units")
+        # 2. Unit counts and property structure
         units = facts.get("units")
         if "5 or more" in lower or "5+" in lower:
             if units is None:
                 return TriBool.UNKNOWN
             return TriBool.TRUE if units >= 5 else TriBool.FALSE
 
-        if "2 or fewer" in lower or "owner-occupied" in lower:
-            # Owner occupied fact is always missing in public assessor data
+        if any(kw in lower for kw in ["small-landlord", "small landlord", "two rental properties", "no more than four", "4 residential units"]):
+            # Small landlord status requires facts not in single-parcel assessor records
+            small_ll = facts.get("small_landlord")
+            if small_ll is None:
+                return TriBool.UNKNOWN
+            return TriBool.TRUE if small_ll else TriBool.FALSE
+
+        if any(kw in lower for kw in ["single-family", "single family", "condominium", "condo", "separately alienable"]):
+            use_desc = (facts.get("use_description") or "").lower()
+            if not use_desc and units is None:
+                return TriBool.UNKNOWN
+            if "single" in use_desc or "condo" in use_desc or units == 1:
+                return TriBool.TRUE
+            return TriBool.FALSE
+
+        # 3. Owner-occupied properties (almost always missing from public assessor records)
+        if "2 or fewer" in lower or "owner-occupied" in lower or "owner occupied" in lower:
             owner_occupied = facts.get("owner_occupied")
             if owner_occupied is None:
                 return TriBool.UNKNOWN
@@ -204,3 +218,4 @@ class PredicateEvaluator:
 
         # Default for general applicability
         return TriBool.TRUE
+

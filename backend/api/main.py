@@ -18,6 +18,7 @@ from backend.api.errors import (
 from backend.api.middleware import RequestContextMiddleware
 from backend.api.routers import (
     ai,
+    audit,
     changes,
     documents,
     exports,
@@ -139,6 +140,7 @@ def create_app() -> FastAPI:
     app.include_router(changes.router, prefix=prefix)
     app.include_router(exports.router, prefix=prefix)
     app.include_router(ai.router, prefix=prefix)
+    app.include_router(audit.router, prefix=prefix)
 
     return app
 

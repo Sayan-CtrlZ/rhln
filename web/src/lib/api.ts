@@ -283,6 +283,8 @@ export interface RuleSourceHighlight {
   quote: string;
   text_before: string;
   text_after: string;
+  retrieval_date?: string;
+  document_title?: string;
 }
 
 export async function fetchRuleSource(ruleId: string): Promise<RuleSourceHighlight> {
@@ -478,4 +480,56 @@ export const EXPORT_URLS = {
   swaggerDocs: `${SERVER_ROOT}/docs`,
   redocDocs: `${SERVER_ROOT}/redoc`,
   openapiJson: `${SERVER_ROOT}/openapi.json`,
+  auditVerify: `${API_BASE}/audit/verify-chain`,
 };
+
+/* ========================================================================= */
+/* Audit & System Provenance API (TRD Section 12)                            */
+/* ========================================================================= */
+
+export interface AuditEvent {
+  id: number;
+  ts: string;
+  actor: string;
+  action: string;
+  entity_type?: string;
+  entity_id?: string;
+  run_id?: string;
+  payload: Record<string, any>;
+  prev_hash: string;
+  hash: string;
+}
+
+export interface AuditVerifyResult {
+  verified: boolean;
+  total_events: number;
+  genesis_hash: string;
+  tip_hash: string;
+  tamper_detected: boolean;
+  first_mismatch_id?: number;
+  message: string;
+}
+
+export async function fetchAuditEvents(): Promise<AuditEvent[]> {
+  try {
+    const res = await fetch(`${API_BASE}/audit/events`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.warn('Failed to fetch audit events:', err);
+    return [];
+  }
+}
+
+export async function verifyAuditChain(): Promise<AuditVerifyResult | null> {
+  try {
+    const res = await fetch(`${API_BASE}/audit/verify-chain`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch (err) {
+    console.warn('Failed to verify audit chain:', err);
+    return null;
+  }
+}

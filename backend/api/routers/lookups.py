@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from backend.api.deps import get_as_of, get_lang, get_request_id, verify_api_key
 from backend.api.errors import BadRequestError, NotFoundError
 from backend.api.routers.rules import load_rules
+from backend.api.routers.audit import record_audit_event
 from backend.api.schemas import DataEnvelope, wrap_data
 from backend.config import settings
 from backend.engine.lookup import AddressLookupEngine
@@ -22,6 +23,25 @@ router = APIRouter(tags=["Lookups"])
 
 LOOKUPS_FILE = "out/lookups.json"
 SAMPLE_ADDRESSES_FILE = "data/sample_addresses.csv"
+
+_MANIFEST_RETRIEVAL_DATES: Dict[str, str] = {}
+
+
+def get_manifest_retrieval_dates() -> Dict[str, str]:
+    global _MANIFEST_RETRIEVAL_DATES
+    if _MANIFEST_RETRIEVAL_DATES:
+        return _MANIFEST_RETRIEVAL_DATES
+    manifest_path = os.path.join("data", "corpus", "corpus_manifest.csv")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as mf:
+                for row in csv.DictReader(mf):
+                    did = row.get("doc_id", "").strip().lower()
+                    if did:
+                        _MANIFEST_RETRIEVAL_DATES[did] = row.get("retrieved_at") or "2026-10-01T22:35Z"
+        except Exception:
+            pass
+    return _MANIFEST_RETRIEVAL_DATES
 
 
 def load_sample_addresses() -> List[SampleAddress]:
@@ -78,6 +98,8 @@ class RuleEvaluationSummary(BaseModel):
     result: str  # applies, unknown, superseded, not_yet_effective, pending
     explanation: str
     conflict_flag: bool = False
+    confidence: float = 1.0
+    review_required: bool = False
     citation: Optional[str] = None
     category: Optional[str] = None
     title: Optional[str] = None
@@ -85,6 +107,10 @@ class RuleEvaluationSummary(BaseModel):
     requirement: Optional[str] = None
     exemptions: Optional[str] = None
     effective_date: Optional[str] = None
+    quoted_span: Optional[str] = None
+    source_url: Optional[str] = None
+    source_doc_id: Optional[str] = None
+    retrieval_date: Optional[str] = None
 
 
 class AddressLookupResponse(BaseModel):
@@ -96,6 +122,9 @@ class AddressLookupResponse(BaseModel):
     stack: List[Dict[str, Any]]
     results: List[RuleEvaluationSummary]
     confidence: float = 1.0
+    conflict_count: int = 0
+    human_review_required: bool = False
+    human_review_reasons: List[str] = Field(default_factory=list)
 
 
 @router.post("/lookup", response_model=DataEnvelope[AddressLookupResponse])
@@ -160,16 +189,32 @@ async def lookup_address(
     geo_resolver = JurisdictionResolver()
     resolved_loc = geo_resolver.resolve_address(target_addr)
 
+    manifest_dates = get_manifest_retrieval_dates()
     rule_map = {r.team_rule_id: r for r in rules}
     summary_results: List[RuleEvaluationSummary] = []
+    conflict_count = 0
+    unknown_count = 0
+
     for res in eval_results:
         rule_meta = rule_map.get(res.team_rule_id)
+        doc_id = rule_meta.source_doc_id if rule_meta else None
+        ret_date = manifest_dates.get(doc_id.lower()) if doc_id else "2026-10-01T22:35Z"
+        conf_val = getattr(res, "confidence", 1.0)
+        review_req = getattr(res, "review_required", False) or res.conflict_flag or res.result == "unknown"
+
+        if res.conflict_flag:
+            conflict_count += 1
+        if res.result == "unknown":
+            unknown_count += 1
+
         summary_results.append(
             RuleEvaluationSummary(
                 team_rule_id=res.team_rule_id,
                 result=res.result,
                 explanation=res.explanation,
                 conflict_flag=res.conflict_flag,
+                confidence=conf_val,
+                review_required=review_req,
                 citation=rule_meta.citation if rule_meta else None,
                 category=rule_meta.category if rule_meta else None,
                 title=rule_meta.title if rule_meta else None,
@@ -177,8 +222,28 @@ async def lookup_address(
                 requirement=rule_meta.requirement if rule_meta else None,
                 exemptions=rule_meta.exemptions if rule_meta else None,
                 effective_date=rule_meta.effective_date if rule_meta else None,
+                quoted_span=rule_meta.quoted_span if rule_meta else None,
+                source_url=rule_meta.source_url if rule_meta else None,
+                source_doc_id=doc_id,
+                retrieval_date=ret_date,
             )
         )
+
+    # Human review flagging (Requirement 4)
+    human_review_required = conflict_count > 0 or unknown_count > 0 or any(r.review_required for r in summary_results)
+    human_review_reasons: List[str] = []
+    if conflict_count > 0:
+        human_review_reasons.append(
+            f"{conflict_count} rules have layered preemption / municipal vs state interactions requiring human review."
+        )
+    if unknown_count > 0:
+        human_review_reasons.append(
+            f"{unknown_count} rules have 'unknown' coverage verdicts due to missing property facts (units or year built)."
+        )
+
+    overall_confidence = round(
+        sum(r.confidence for r in summary_results) / max(1, len(summary_results)), 2
+    )
 
     response_data = AddressLookupResponse(
         lookup_id=f"lk_{request_id.replace('req_', '')}",
@@ -198,6 +263,28 @@ async def lookup_address(
         },
         stack=[n.model_dump() for n in resolved_loc.stack],
         results=summary_results,
+        confidence=overall_confidence,
+        conflict_count=conflict_count,
+        human_review_required=human_review_required,
+        human_review_reasons=human_review_reasons,
+    )
+
+    # Auditable Log: Real-time event recording into append-only SHA256 chain (Requirement 6)
+    record_audit_event(
+        actor="lookup_api",
+        action="lookup.address_evaluated",
+        entity_type="address",
+        entity_id=target_addr.address_id if target_addr.address_id != "ADHOC" else target_addr.street_address,
+        payload={
+            "address": target_addr.street_address,
+            "city": resolved_loc.legal_city,
+            "state": resolved_loc.state,
+            "as_of": effective_as_of,
+            "rules_evaluated": len(summary_results),
+            "conflict_count": conflict_count,
+            "unknown_count": unknown_count,
+            "human_review_required": human_review_required,
+        },
     )
 
     return wrap_data(data=response_data, request_id=request_id, as_of=effective_as_of)

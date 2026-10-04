@@ -56,24 +56,30 @@ class AddressLookupEngine:
                 continue
 
             if rule.status == "pending":
+                conf = getattr(rule, "confidence", 1.0) or 1.0
                 evaluations.append(
                     AddressLookupRuleResult(
                         team_rule_id=rule.team_rule_id,
                         result="pending",
                         explanation=f"Pending legislative proposal in {rule.jurisdiction}: not yet enacted law.",
                         conflict_flag=rule.conflict_flag,
+                        confidence=conf,
+                        review_required=rule.conflict_flag or conf < 0.85,
                     )
                 )
                 continue
 
             # Check if effective_date is in the future relative to as_of
             if rule.effective_date and rule.effective_date > as_of:
+                conf = getattr(rule, "confidence", 1.0) or 1.0
                 evaluations.append(
                     AddressLookupRuleResult(
                         team_rule_id=rule.team_rule_id,
                         result="not_yet_effective",
                         explanation=f"Enacted with effective date {rule.effective_date}, which is after query date {as_of}.",
                         conflict_flag=rule.conflict_flag,
+                        confidence=conf,
+                        review_required=rule.conflict_flag or conf < 0.85,
                     )
                 )
                 continue
@@ -92,17 +98,22 @@ class AddressLookupEngine:
                         result="unknown",
                         explanation=f"Coverage depends on property facts not available in public assessor records ({rule.coverage_conditions or 'building age / unit count'}).",
                         conflict_flag=rule.conflict_flag,
+                        confidence=0.50,
+                        review_required=True,
                     )
                 )
                 continue
 
             # tribool == TriBool.TRUE
+            conf = getattr(rule, "confidence", 1.0) or 1.0
             evaluations.append(
                 AddressLookupRuleResult(
                     team_rule_id=rule.team_rule_id,
                     result="applies",
                     explanation=f"In force and covers this property in {resolved.legal_city}, {resolved.state} as of {as_of}.",
                     conflict_flag=rule.conflict_flag,
+                    confidence=conf,
+                    review_required=rule.conflict_flag or conf < 0.85,
                 )
             )
 

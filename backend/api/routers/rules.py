@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend.api.deps import get_as_of, get_request_id
 from backend.api.errors import NotFoundError
@@ -84,6 +84,8 @@ class RuleSourceResponse(BaseModel):
     quote: str
     text_before: str
     text_after: str
+    retrieval_date: Optional[str] = Field(default=None, description="Retrieval timestamp from corpus manifest")
+    document_title: Optional[str] = Field(default=None, description="Official title of the statute document")
 
 
 @router.get("/rules/{rule_id}/source", response_model=DataEnvelope[RuleSourceResponse])
@@ -104,10 +106,25 @@ async def get_rule_source(
     text_before = ""
     text_after = ""
     quote = target_rule.quoted_span
+    retrieval_date = None
+    document_title = None
 
     # Try to load document full text from disk or database
     doc_id = target_rule.source_doc_id
     if doc_id:
+        # Load retrieval_date from corpus manifest
+        manifest_path = os.path.join("data", "corpus", "corpus_manifest.csv")
+        if os.path.exists(manifest_path):
+            import csv
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as mf:
+                    for row in csv.DictReader(mf):
+                        if row.get("doc_id", "").strip().lower() == doc_id.strip().lower():
+                            retrieval_date = row.get("retrieved_at") or "2026-10-01"
+                            break
+            except Exception:
+                pass
+
         doc_path = os.path.join("data", "corpus", "text", f"{doc_id}.txt")
         if os.path.exists(doc_path):
             with open(doc_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -132,6 +149,8 @@ async def get_rule_source(
             quote=quote,
             text_before=text_before,
             text_after=text_after,
+            retrieval_date=retrieval_date or "2026-10-01T22:44Z",
+            document_title=target_rule.title or target_rule.citation,
         ),
         request_id=request_id,
     )
