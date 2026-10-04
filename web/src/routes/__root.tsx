@@ -189,8 +189,8 @@ function RootComponent() {
           <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur shadow-xs">
             <div className="mx-auto flex max-w-[1600px] w-full items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
               <Link to="/" className="flex items-center gap-3 group shrink-0">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-primary text-primary-foreground shadow-xs group-hover:scale-105 transition-transform">
-                  <House className="size-4" strokeWidth={2.2} />
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-xs group-hover:scale-105 transition-transform overflow-hidden bg-white/10 dark:bg-black/10">
+                  <img src="/logo.png" alt="RHLN Logo" className="size-full object-contain" />
                 </span>
                 <div className="hidden sm:block">
                   <span className="font-display font-bold text-base leading-none sm:text-lg">

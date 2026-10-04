@@ -42,7 +42,8 @@ web/.output/
 web/.nitro/
 web/.wrangler/
 web/dist/
-
+.vercel/
+web/.vercel/
 # External raw starter reference files (kept local, excluded from git repo)
 reference/
 
