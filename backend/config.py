@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     API_KEY_HEADER_NAME: str = "X-API-Key"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/rhln"
+    DATABASE_URL: str = "sqlite:///./data/backend.db"
 
     # AI Models
     ANTHROPIC_API_KEY: str = ""
