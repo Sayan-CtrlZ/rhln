@@ -25,6 +25,8 @@ import {
   TriangleAlert,
   ArrowRight,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import appCss from "../styles.css?url";
@@ -149,6 +151,7 @@ function RootComponent() {
   const [language, setLanguage] = useState<Language>('en');
   const [dark, setDark] = useState(false);
   const [aiCopilotOpen, setAiCopilotOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
 
@@ -323,10 +326,19 @@ function RootComponent() {
                   {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
                 </Button>
 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="size-9 shrink-0 lg:hidden ml-1"
+                >
+                  {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                </Button>
+
                 {isLandingPage && (
                   <Link
                     to="/lookup"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all shrink-0 ml-1"
+                    className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all shrink-0 ml-1"
                   >
                     <span>{t('Launch App', 'Ir al Panel')}</span>
                     <ArrowRight className="size-3.5" />
@@ -335,59 +347,114 @@ function RootComponent() {
               </div>
             </div>
 
-            {/* Mobile / Compact Subnav for Small Screens */}
-            <div className="flex lg:hidden overflow-x-auto border-t border-border px-4 py-2 gap-1 bg-secondary/30">
-              <Link
-                to="/lookup"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('Lookup', 'Consulta')}
-              </Link>
-              <Link
-                to="/changes"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('Changes', 'Cambios')}
-              </Link>
-              <Link
-                to="/jurisdictions"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('Jurisdictions', 'Jurisdicciones')}
-              </Link>
-              <Link
-                to="/rules"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('Rules', 'Reglas')}
-              </Link>
-              <Link
-                to="/documents"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('Corpus', 'Corpus')}
-              </Link>
-              <Link
-                to="/api"
-                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
-              >
-                {t('API', 'API')}
-              </Link>
-              <button
-                type="button"
-                onClick={() => setAiCopilotOpen(true)}
-                className="px-3 py-1 rounded text-xs font-bold whitespace-nowrap bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-              >
-                ✨ AI Copilot
-              </button>
-            </div>
+            {/* Mobile Navigation Dropdown */}
+            {mobileMenuOpen && (
+              <div className="flex flex-col lg:hidden border-t border-border bg-background/95 backdrop-blur absolute left-0 w-full top-full shadow-lg p-2 gap-1 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                {isLandingPage ? (
+                  <>
+                    <a
+                      href="#overview"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    >
+                      {t('Overview', 'Inicio')}
+                    </a>
+                    <a
+                      href="#how-it-works"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    >
+                      {t('How It Works', 'Cómo Funciona')}
+                    </a>
+                    <a
+                      href="#coverage"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    >
+                      {t('Coverage', 'Cobertura')}
+                    </a>
+                    <a
+                      href="#faq"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    >
+                      {t('FAQ', 'Preguntas')}
+                    </a>
+                    <Link
+                      to="/lookup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mt-2 flex justify-center items-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
+                    >
+                      <span>{t('Launch Dashboard', 'Iniciar Panel')}</span>
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/lookup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('Lookup', 'Consulta')}
+                    </Link>
+                    <Link
+                      to="/changes"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('Changes', 'Cambios')}
+                    </Link>
+                    <Link
+                      to="/jurisdictions"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('Jurisdictions', 'Jurisdicciones')}
+                    </Link>
+                    <Link
+                      to="/rules"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('Rules', 'Reglas')}
+                    </Link>
+                    <Link
+                      to="/documents"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('Corpus', 'Corpus')}
+                    </Link>
+                    <Link
+                      to="/api"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-secondary/50 hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary"
+                    >
+                      {t('API', 'API')}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setAiCopilotOpen(true);
+                      }}
+                      className="px-4 py-3 mt-2 rounded-lg text-sm font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex justify-center items-center gap-2"
+                    >
+                      <Sparkles className="size-4" />
+                      {t('AI Copilot', 'Copiloto de IA')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </header>
 
           {/* AI Copilot Slide-Over Drawer */}
           <AICopilotDrawer open={aiCopilotOpen} onClose={() => setAiCopilotOpen(false)} />
 
           {/* Page Body */}
-          <div className="flex-1">
+          <div className="flex-1 animate-in fade-in zoom-in-[0.98] duration-500 ease-out">
             <Outlet />
           </div>
 
