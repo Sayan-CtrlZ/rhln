@@ -5,10 +5,10 @@ import logging
 from typing import Any, Dict, List, Optional
 from anthropic import AsyncAnthropic
 
-from rhln.config import settings
-from rhln.models import OfficialRuleRecord
+from backend.config import settings
+from backend.models import OfficialRuleRecord
 
-logger = logging.getLogger("rhln.llm.anthropic")
+logger = logging.getLogger("backend.llm.anthropic")
 
 EXTRACTION_TOOL_SCHEMA = {
     "name": "extract_housing_rules",

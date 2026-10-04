@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
-from rhln.models import SampleAddress
+from backend.models import SampleAddress
 
 
 class JurisdictionNode(BaseModel):

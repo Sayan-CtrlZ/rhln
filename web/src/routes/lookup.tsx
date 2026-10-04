@@ -35,6 +35,7 @@ import {
   Check,
   Users,
   Gavel,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -213,6 +214,16 @@ const OFFICIAL_CATEGORIES = [
   },
 ];
 
+const SESSION_KEYS = {
+  EXPLANATIONS_CACHE: 'rhln_lexi_explanations_cache',
+  VISIBLE_EXPLANATION_IDS: 'rhln_lexi_visible_explanations',
+  LOOKUP_ADDRESS: 'rhln_lookup_address',
+  LOOKUP_YEAR: 'rhln_lookup_year',
+  LOOKUP_UNITS: 'rhln_lookup_units',
+  LOOKUP_RESULTS: 'rhln_lookup_results',
+  LOOKUP_STACK: 'rhln_lookup_stack',
+};
+
 /* ------------------------------------------------------------------------- */
 /* Main Lookup Page Component                                                */
 /* ------------------------------------------------------------------------- */
@@ -246,8 +257,29 @@ function LookupPage() {
   const [sampleProperties, setSampleProperties] = useState<SamplePropertyItem[]>([]);
   const [expandedTraceRuleId, setExpandedTraceRuleId] = useState<string | null>(null);
 
-  // AI Rule Explanations State
-  const [aiExplanations, setAiExplanations] = useState<Record<string, RuleAIExplanation>>({});
+  // AI Rule Explanations State (Session Cached & Tab Resilient)
+  const [aiExplanations, setAiExplanations] = useState<Record<string, RuleAIExplanation>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(SESSION_KEYS.EXPLANATIONS_CACHE);
+        if (saved) return JSON.parse(saved);
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  });
+  const [visibleExplanationIds, setVisibleExplanationIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(SESSION_KEYS.VISIBLE_EXPLANATION_IDS);
+        if (saved) return JSON.parse(saved);
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
   const [aiExplainingRuleId, setAiExplainingRuleId] = useState<string | null>(null);
   const [copilotOpen, setCopilotOpen] = useState(false);
 
@@ -292,6 +324,34 @@ function LookupPage() {
           yBuilt: urlYear || undefined,
           uCount: urlUnits || undefined,
         });
+      } else {
+        // Tab retention: Restore previously evaluated address and rules when navigating between tabs
+        try {
+          const savedAddr = sessionStorage.getItem(SESSION_KEYS.LOOKUP_ADDRESS);
+          const savedYear = sessionStorage.getItem(SESSION_KEYS.LOOKUP_YEAR);
+          const savedUnits = sessionStorage.getItem(SESSION_KEYS.LOOKUP_UNITS);
+          const savedResults = sessionStorage.getItem(SESSION_KEYS.LOOKUP_RESULTS);
+          const savedStack = sessionStorage.getItem(SESSION_KEYS.LOOKUP_STACK);
+
+          if (savedAddr) setAddress(savedAddr);
+          if (savedYear) setYearBuilt(savedYear);
+          if (savedUnits) setUnits(savedUnits);
+          if (savedResults) {
+            const parsed = JSON.parse(savedResults);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setEvaluatedRules(parsed);
+              setSearched(true);
+            }
+          }
+          if (savedStack) {
+            const parsedStack = JSON.parse(savedStack);
+            if (Array.isArray(parsedStack) && parsedStack.length > 0) {
+              setJurisdictionStack(parsedStack);
+            }
+          }
+        } catch {
+          // ignore session restore errors
+        }
       }
 
       if (sourceParam) {
@@ -404,8 +464,25 @@ function LookupPage() {
 
       if (res && res.results) {
         setEvaluatedRules(res.results);
+        let stackItems: Array<{ name: string; level: string }> = [];
         if (res.stack && res.stack.length > 0) {
-          setJurisdictionStack(res.stack.map((s) => ({ name: s.name, level: s.level })));
+          stackItems = res.stack.map((s) => ({ name: s.name, level: s.level }));
+          setJurisdictionStack(stackItems);
+        }
+
+        // Persist to sessionStorage for seamless cross-tab navigation
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(SESSION_KEYS.LOOKUP_ADDRESS, params.addressStr);
+            if (params.yBuilt) sessionStorage.setItem(SESSION_KEYS.LOOKUP_YEAR, params.yBuilt);
+            if (params.uCount) sessionStorage.setItem(SESSION_KEYS.LOOKUP_UNITS, params.uCount);
+            sessionStorage.setItem(SESSION_KEYS.LOOKUP_RESULTS, JSON.stringify(res.results));
+            if (stackItems.length > 0) {
+              sessionStorage.setItem(SESSION_KEYS.LOOKUP_STACK, JSON.stringify(stackItems));
+            }
+          } catch {
+            // ignore
+          }
         }
       }
     } catch (err) {
@@ -445,17 +522,57 @@ function LookupPage() {
   };
 
   const handleExplainWithAI = async (ruleId: string) => {
-    if (aiExplanations[ruleId]) {
-      const updated = { ...aiExplanations };
-      delete updated[ruleId];
-      setAiExplanations(updated);
+    const isCurrentlyVisible = visibleExplanationIds.includes(ruleId);
+
+    if (isCurrentlyVisible) {
+      // 1. Just hide - DO NOT delete cached explanation
+      const nextVisible = visibleExplanationIds.filter((id) => id !== ruleId);
+      setVisibleExplanationIds(nextVisible);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(SESSION_KEYS.VISIBLE_EXPLANATION_IDS, JSON.stringify(nextVisible));
+        } catch {
+          // ignore
+        }
+      }
       return;
     }
 
+    // 2. If already in memory / cached from previous fetch, show instantly without network delay
+    if (aiExplanations[ruleId]) {
+      const nextVisible = [...visibleExplanationIds, ruleId];
+      setVisibleExplanationIds(nextVisible);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(SESSION_KEYS.VISIBLE_EXPLANATION_IDS, JSON.stringify(nextVisible));
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
+    // 3. First time fetching: call API, cache in state and sessionStorage, and set visible
     setAiExplainingRuleId(ruleId);
     try {
-      const expl = await explainRuleWithAI(ruleId, language);
-      setAiExplanations((prev) => ({ ...prev, [ruleId]: expl }));
+      const expl = await explainRuleWithAI(ruleId, language, {
+        address,
+        year_built: yearBuilt,
+        units,
+      });
+      const updatedCache = { ...aiExplanations, [ruleId]: expl };
+      setAiExplanations(updatedCache);
+      const nextVisible = [...visibleExplanationIds, ruleId];
+      setVisibleExplanationIds(nextVisible);
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(SESSION_KEYS.EXPLANATIONS_CACHE, JSON.stringify(updatedCache));
+          sessionStorage.setItem(SESSION_KEYS.VISIBLE_EXPLANATION_IDS, JSON.stringify(nextVisible));
+        } catch {
+          // ignore
+        }
+      }
     } catch (err) {
       console.warn('AI explanation failed:', err);
     } finally {
@@ -646,7 +763,7 @@ function LookupPage() {
           className="inline-flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-2.5 text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-all shadow-xs self-start md:self-center"
         >
           <Sparkles className="size-4 text-purple-500 animate-pulse" />
-          <span>{t('Ask AI Legal Assistant', 'Asistente Legal de IA')}</span>
+          <span>{t('Ask Lexi (AI Specialist)', 'Consultar a Lexi (IA)')}</span>
         </button>
       </div>
 
@@ -995,16 +1112,16 @@ function LookupPage() {
       {searched && !loading && (
         <div className="mt-8 space-y-6">
           {/* Jurisdiction Stack & Filter Bar */}
-          <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* StackBreadcrumb */}
-              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold sm:text-sm">
+              {/* Stack Breadcrumb */}
+              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                 <MapPin className="size-4 text-primary shrink-0" />
                 <span className="text-muted-foreground">{t('Jurisdiction Stack:', 'Jurisdicciones:')}</span>
                 {jurisdictionStack.map((j, idx) => (
                   <span key={j.name} className="flex items-center gap-1.5">
                     <span
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                      className={`px-3 py-1 rounded-xl text-xs font-bold ${
                         idx === jurisdictionStack.length - 1
                           ? 'bg-primary/10 text-primary border border-primary/20'
                           : 'bg-secondary text-foreground'
@@ -1019,124 +1136,120 @@ function LookupPage() {
                 ))}
               </div>
 
-              {/* Status Filter Chips */}
+              {/* Status Filter Chips (only render active counts to eliminate zero-count clutter) */}
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter(statusFilter === 'applies' ? 'all' : 'applies')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                    statusFilter === 'applies'
-                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                      : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 hover:bg-emerald-500/20'
-                  }`}
-                >
-                  <CheckCircle2 className="size-3.5" />
-                  {appliesCount} {t('Applies', 'Aplican')}
-                </button>
+                {appliesCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === 'applies' ? 'all' : 'applies')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      statusFilter === 'applies'
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                        : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 hover:bg-emerald-500/20'
+                    }`}
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                    <span>{appliesCount} {t('Applies', 'Aplican')}</span>
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter(statusFilter === 'unknown' ? 'all' : 'unknown')}
-                  title={t('Rules where building year or unit count is missing — supply property facts above to resolve them to a definitive applies/not-applies verdict.', 'Reglas donde faltan datos del inmueble — ingrese el año y las unidades para resolverlas.')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                    statusFilter === 'unknown'
-                      ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 hover:bg-amber-500/20'
-                  }`}
-                >
-                  <HelpCircle className="size-3.5" />
-                  {unknownCount} {t('More Facts Needed', 'Faltan datos')}
-                </button>
+                {unknownCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === 'unknown' ? 'all' : 'unknown')}
+                    title={t('Rules where building year or unit count is missing — supply property facts above to resolve them.', 'Reglas donde faltan datos del inmueble.')}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      statusFilter === 'unknown'
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    <HelpCircle className="size-3.5" />
+                    <span>{unknownCount} {t('More Facts Needed', 'Faltan datos')}</span>
+                  </button>
+                )}
 
                 {supersededCount > 0 && (
                   <button
                     type="button"
                     onClick={() => setStatusFilter(statusFilter === 'superseded' ? 'all' : 'superseded')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                       statusFilter === 'superseded'
                         ? 'bg-slate-700 text-white border-slate-800 shadow-xs'
                         : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20 hover:bg-slate-500/20'
                     }`}
                   >
                     <Layers className="size-3.5" />
-                    {supersededCount} {t('Superseded', 'Sustituidas')}
+                    <span>{supersededCount} {t('Superseded by Local Law', 'Sustituidas')}</span>
                   </button>
                 )}
 
-                {upcomingCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                    <Clock3 className="size-3.5" />
-                    {upcomingCount} {t('Upcoming', 'Futuras')}
-                  </span>
+                {statusFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('all')}
+                    className="text-xs font-semibold text-muted-foreground hover:text-foreground underline px-2"
+                  >
+                    {t('Show All', 'Mostrar Todos')}
+                  </button>
                 )}
               </div>
             </div>
 
-            {/* Horizontal Category Filter Tabs & Audience View Mode Switcher */}
-            <div className="pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveCategoryFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                    activeCategoryFilter === 'all'
-                      ? 'bg-primary text-primary-foreground shadow-2xs'
-                      : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {t('All Categories', 'Todas')} ({evaluatedRules.length})
-                </button>
-                {OFFICIAL_CATEGORIES.map((cat) => {
-                  const count = evaluatedRules.filter(
-                    (r) => (r.category || 'rent_increase_limits') === cat.key
-                  ).length;
-                  if (count === 0) return null;
-                  const Icon = cat.icon;
-                  return (
-                    <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => setActiveCategoryFilter(cat.key)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                        activeCategoryFilter === cat.key
-                          ? 'bg-primary text-primary-foreground shadow-2xs'
-                          : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <Icon className="size-3.5" />
-                      <span>{es ? cat.shortEs : cat.shortEn}</span>
-                      <span className="rounded-full bg-background/50 px-1.5 py-0.2 text-[10px]">
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+            {/* Category Dropdown Filter & View Mode Switcher */}
+            <div className="pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-2.5 flex-1 min-w-[280px] max-w-md">
+                <Filter className="size-4 text-primary shrink-0" />
+                <div className="relative flex-1">
+                  <select
+                    id="category-filter-select"
+                    value={activeCategoryFilter}
+                    onChange={(e) => setActiveCategoryFilter(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-input bg-secondary/50 px-3.5 pr-8 text-xs font-semibold shadow-2xs outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer text-foreground"
+                  >
+                    <option value="all">
+                      {t('All Housing Law Categories', 'Todas las Categorías')} ({evaluatedRules.length} {t('rules', 'reglas')})
+                    </option>
+                    {OFFICIAL_CATEGORIES.map((cat) => {
+                      const count = evaluatedRules.filter(
+                        (r) => (r.category || 'rent_increase_limits') === cat.key
+                      ).length;
+                      if (count === 0) return null;
+                      return (
+                        <option key={cat.key} value={cat.key}>
+                          {es ? cat.es : cat.en} ({count} {t('rules', 'reglas')})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                </div>
               </div>
 
               {/* View Mode Toggle: Plain Language vs Legal Audit */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-secondary/80 border border-border shrink-0">
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/80 border border-border shrink-0">
                 <button
                   type="button"
                   onClick={() => setViewMode('plain')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                     viewMode === 'plain'
-                      ? 'bg-primary text-primary-foreground shadow-2xs'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <FileText className="size-3" />
+                  <FileText className="size-3.5" />
                   <span>{t('Plain Language', 'Resumen Claro')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('legal')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                     viewMode === 'legal'
-                      ? 'bg-primary text-primary-foreground shadow-2xs'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Scale className="size-3" />
+                  <Scale className="size-3.5" />
                   <span>{t('Legal Audit Mode', 'Auditoría Legal')}</span>
                 </button>
               </div>
@@ -1295,6 +1408,8 @@ function LookupPage() {
                         const normStatus = (rule.result in STATUS_MAP ? rule.result : 'unknown') as RuleStatus;
                         const statusConfig = STATUS_MAP[normStatus];
                         const isTraceExpanded = expandedTraceRuleId === rule.team_rule_id;
+                        const isExplanationVisible = visibleExplanationIds.includes(rule.team_rule_id);
+                        const hasCachedExplanation = Boolean(aiExplanations[rule.team_rule_id]);
                         const aiExplanation = aiExplanations[rule.team_rule_id];
                         const isExplainingThis = aiExplainingRuleId === rule.team_rule_id;
 
@@ -1378,51 +1493,27 @@ function LookupPage() {
                               </div>
                             )}
 
-                            {/* AI Tenant/Landlord Breakdown */}
-                            {aiExplanation && (
-                              <div className="mt-4 rounded-2xl border border-purple-500/30 bg-purple-500/5 p-4 sm:p-5 space-y-3">
-                                <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
-                                  <span className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5 text-xs sm:text-sm">
-                                    <Sparkles className="size-4 text-purple-500" />
-                                    {t('Anthropic Claude Plain-Language Breakdown', 'Análisis en Lenguaje Sencillo (Claude)')}
-                                  </span>
-                                  <span className="text-[11px] text-muted-foreground font-mono">
-                                    {aiExplanation.citation}
-                                  </span>
-                                </div>
-
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                  <div className="rounded-xl bg-card border border-border p-3.5 space-y-1 shadow-2xs">
-                                    <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-foreground">
-                                      <UserCheck className="size-4 text-emerald-500" />
-                                      <span>{t('For Tenants (Rights & Relief)', 'Para Inquilinos')}</span>
+                            {/* AI Concise Property-Specific Explanation Box */}
+                            {isExplanationVisible && aiExplanation && (
+                              <div className="mt-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 p-3.5 space-y-2 text-xs">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-2.5 text-foreground leading-relaxed">
+                                    <Sparkles className="size-4 text-purple-500 shrink-0 mt-0.5" />
+                                    <div>
+                                      <span className="font-bold text-purple-700 dark:text-purple-300 mr-1.5">
+                                        {t('Lexi Legal Insight:', 'Análisis de Lexi:')}
+                                      </span>
+                                      <span className="text-foreground">
+                                        {aiExplanation.concise_explanation || aiExplanation.plain_summary}
+                                      </span>
                                     </div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                      {aiExplanation.tenant_impact}
-                                    </p>
                                   </div>
-
-                                  <div className="rounded-xl bg-card border border-border p-3.5 space-y-1 shadow-2xs">
-                                    <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-foreground">
-                                      <Building2 className="size-4 text-blue-500" />
-                                      <span>{t('For Landlords (Duties & Ceilings)', 'Para Propietarios')}</span>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                      {aiExplanation.landlord_compliance}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="pt-2 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2 border-t border-purple-500/10">
-                                  <span>
-                                    <strong>{t('Legal Effect:', 'Efecto Legal:')}</strong> {aiExplanation.key_takeaway}
-                                  </span>
                                   <button
                                     type="button"
                                     onClick={() => setCopilotOpen(true)}
-                                    className="text-purple-600 dark:text-purple-400 hover:underline font-bold text-xs"
+                                    className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline shrink-0 whitespace-nowrap ml-2"
                                   >
-                                    {t('Ask Claude more →', 'Preguntar a Claude →')}
+                                    {t('Ask Lexi →', 'Preguntar a Lexi →')}
                                   </button>
                                 </div>
                               </div>
@@ -1453,9 +1544,13 @@ function LookupPage() {
                                     <Sparkles className="size-3 text-purple-500" />
                                   )}
                                   <span>
-                                    {aiExplanation
-                                      ? t('Hide AI Guide', 'Ocultar Guía IA')
-                                      : t('Explain with AI', 'Explicar con IA')}
+                                    {isExplainingThis
+                                      ? t('Analyzing with Lexi...', 'Analizando...')
+                                      : isExplanationVisible
+                                      ? t('Hide Lexi Guide', 'Ocultar Guía Lexi')
+                                      : hasCachedExplanation
+                                      ? t('Show Lexi Guide', 'Mostrar Guía Lexi')
+                                      : t('Explain with Lexi', 'Explicar con Lexi')}
                                   </span>
                                 </button>
                               </div>
@@ -1659,7 +1754,7 @@ function LookupPage() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-all"
                   >
                     <Sparkles className="size-3.5 text-purple-500" />
-                    {t('Ask AI About This Report', 'Preguntar a la IA')}
+                    {t('Ask Lexi About This Report', 'Preguntar a Lexi sobre el Informe')}
                   </button>
                 </div>
               </div>

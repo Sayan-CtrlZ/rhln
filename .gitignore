@@ -1,18 +1,56 @@
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# Virtual Environment
 .venv/
 env/
 venv/
-*.env
+ENV/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Testing & Coverage
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
+
+# Databases & local state
+data/*.db
+data/*.sqlite
+data/*.sqlite3
 data/tiger/*.zip
+
+# Build outputs & node artifacts
 out/*.zip
-.DS_Store
 node_modules/
 .output/
+.nitro/
+.wrangler/
 web/node_modules/
 web/.output/
-data/*.db
+web/.nitro/
+web/.wrangler/
+web/dist/
+
+# External raw starter reference files (kept local, excluded from git repo)
+reference/
+
+# OS and IDE metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

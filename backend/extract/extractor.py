@@ -4,14 +4,14 @@ import json
 import logging
 import os
 from typing import Dict, List, Optional
-from rhln.config import settings
-from rhln.extract.verify import verify_rule_evidence
-from rhln.ingest.chunker import LegalChunker
-from rhln.ingest.loaders import CorpusLoader, DocumentMeta
-from rhln.llm.anthropic import ClaudeExtractor
-from rhln.models import OfficialRuleRecord, RulesDeliverable
+from backend.config import settings
+from backend.extract.verify import verify_rule_evidence
+from backend.ingest.chunker import LegalChunker
+from backend.ingest.loaders import CorpusLoader, DocumentMeta
+from backend.llm.anthropic import ClaudeExtractor
+from backend.models import OfficialRuleRecord, RulesDeliverable
 
-logger = logging.getLogger("rhln.extract.extractor")
+logger = logging.getLogger("backend.extract.extractor")
 
 
 class RuleExtractionPipeline:

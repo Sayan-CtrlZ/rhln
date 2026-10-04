@@ -80,10 +80,10 @@ function LandingPage() {
       aEs: 'Los registros catastrales a veces carecen de datos específicos. En vez de adivinar, RHLN usa lógica ternaria (Verdadero, Falso, Desconocido) para emitir veredictos condicionales transparentes.',
     },
     {
-      qEn: 'How are statutory changes (T1 through T5) tracked longitudinally?',
-      qEs: '¿Cómo se rastrean los cambios legislativos (T1 a T5)?',
-      aEn: 'RHLN models statutory shifts as time-series transitions. The system tests pending legislation (California AB 325, Hoboken ch. 158, New Jersey FAIR Act, Massachusetts S.2983, and struck ballot questions) across 500 benchmark properties to show exactly which units gain or lose coverage on specific effective dates.',
-      aEs: 'RHLN modela los cambios legales como transiciones temporales, evaluando leyes aprobadas o en trámite en 500 propiedades del benchmark.',
+      qEn: 'How are statutory changes (T1 through T6) tracked longitudinally?',
+      qEs: '¿Cómo se rastrean los cambios legislativos (T1 a T6)?',
+      aEn: 'RHLN models statutory shifts as time-series transitions. The system tests pending legislation (California AB 325, Hoboken ch. 158, New Jersey FAIR Act, Massachusetts S.2983, struck ballot questions, and Cambridge algorithmic pricing ordinance) across benchmark properties to show exactly which units gain or lose coverage on specific effective dates.',
+      aEs: 'RHLN modela los cambios legales como transiciones temporales, evaluando leyes aprobadas o en trámite en propiedades del benchmark.',
     },
     {
       qEn: 'Does RHLN provide legal advice?',
@@ -100,12 +100,7 @@ function LandingPage() {
         <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1 text-xs font-semibold text-primary shadow-2xs">
-                <Sparkles className="size-3.5 text-primary animate-pulse" />
-                <span>{t('Autonomous Multi-Jurisdictional Regulatory Intelligence', 'Inteligencia Normativa Autónoma Multijurisdiccional')}</span>
-              </div>
-
-              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.08] text-foreground">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.08] text-foreground">
                 {t(
                   'From Thousands of Pages of Housing Law to Instant, Address-Level Answers.',
                   'De Miles de Páginas de Leyes de Vivienda a Respuestas Precisas por Dirección.'
@@ -143,7 +138,7 @@ function LandingPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/80 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
                 >
                   <History className="size-4 text-primary" />
-                  <span>{t('Change Scenarios (T1–T5)', 'Casos de Cambio (T1–T5)')}</span>
+                  <span>{t('Change Scenarios (T1–T6)', 'Casos de Cambio (T1–T6)')}</span>
                 </Link>
               </div>
 
@@ -263,55 +258,11 @@ function LandingPage() {
 
                 <Link
                   to="/lookup"
-                  className="mt-3.5 w-full inline-flex items-center justify-between rounded-lg bg-primary/10 px-3.5 py-2.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+                  className="mt-3.5 w-full inline-flex items-center justify-between rounded-lg bg-primary/10 px-4 py-3 text-xs sm:text-sm font-bold text-primary hover:bg-primary/20 transition-all"
                 >
                   <span>{t('Evaluate Real Address in Navigator Dashboard', 'Consultar Dirección en el Panel')}</span>
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="size-4" />
                 </Link>
-              </div>
-
-              {/* Context Architectural Photography Strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
-                  <img
-                    src={civic}
-                    alt="Civic & Legal Justice Center"
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                    Civic Justice
-                  </span>
-                </div>
-                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
-                  <img
-                    src={community}
-                    alt="Urban Residential Community"
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                    Multifamily Living
-                  </span>
-                </div>
-                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
-                  <img
-                    src={building}
-                    alt="Apartment Building Architecture"
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                    Exemption Rules
-                  </span>
-                </div>
-                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
-                  <img
-                    src={law}
-                    alt="Public Housing Statutes"
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                    Corpus Statutes
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -399,8 +350,8 @@ function LandingPage() {
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {t(
-                    'Generates plain-language compliance summaries grounded in exact verbatim quotes (≥20 chars) from the statutory corpus. Evaluates historical and upcoming effective dates (T1–T5).',
-                    'Genera resúmenes claros respaldados por citas textuales exactas (≥20 caracteres). Permite evaluar fechas efectivas pasadas y futuras (T1–T5).'
+                    'Generates plain-language compliance summaries grounded in exact verbatim quotes (≥20 chars) from the statutory corpus. Evaluates historical and upcoming effective dates (T1–T6).',
+                    'Genera resúmenes claros respaldados por citas textuales exactas (≥20 caracteres). Permite evaluar fechas efectivas pasadas y futuras (T1–T6).'
                   )}
                 </p>
               </div>
@@ -409,6 +360,269 @@ function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 2.5 DEEP-DIVE PLATFORM SHOWCASES (4 Split Image & Text Sections) */}
+      <section className="py-20 bg-background border-b border-border space-y-24">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8 space-y-24">
+          
+          {/* Showcase 1: Image Left, Text Right (Civic & Spatial Hierarchy) */}
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div className="relative group overflow-hidden rounded-3xl border border-border shadow-xl aspect-4/3 sm:aspect-16/10">
+              <img
+                src={civic}
+                alt="Civic & Legal Justice Center"
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 sm:p-8">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-sm w-fit mb-2">
+                  <Landmark className="size-3.5" />
+                  <span>{t('Spatial Intelligence', 'Inteligencia Espacial')}</span>
+                </span>
+                <p className="text-white font-display font-bold text-lg sm:text-xl">
+                  {t('13 Supported Municipal and State Jurisdictions', '13 Jurisdicciones Municipales y Estatales')}
+                </p>
+                <p className="text-white/80 text-xs sm:text-sm mt-1 font-mono">
+                  California · New Jersey · Massachusetts
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                <MapPin className="size-3.5" />
+                <span>{t('Spatial Hierarchy & Boundary Resolution', 'Jerarquía Espacial y Límites')}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display text-foreground tracking-tight leading-tight">
+                {t('Precision Geocoding & Municipal Boundary Verification', 'Geocodificación Precisa y Verificación Municipal')}
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {t(
+                  'A single postal mailing address can be deceiving. RHLN resolves addresses to precise Census FIPS codes and incorporated boundary shapefiles to distinguish unincorporated county parcels from incorporated municipal rent boards.',
+                  'Una dirección postal puede inducir a error. RHLN resuelve direcciones con códigos FIPS y mapas de límites municipales para distinguir zonas no incorporadas de distritos con juntas de alquiler.'
+                )}
+              </p>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Zero Postal Traps: ', 'Sin Errores Postales: ')}</strong>
+                    {t('Distinguishes USPS mailing city names from legal municipal taxation and regulatory boundaries.', 'Distingue ciudades postales de las autoridades regulatorias municipales reales.')}
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Hierarchical Precedence: ', 'Prevalencia Jerárquica: ')}</strong>
+                    {t('Automatically layers municipal ordinances (e.g. Berkeley Measure BB) on top of statewide baselines (AB 1482).', 'Aplica ordenanzas municipales sobre los marcos estatales de protección.')}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Link
+                  to="/jurisdictions"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                >
+                  <span>{t('Explore Jurisdictions Directory', 'Ver Directorio de Jurisdicciones')}</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 2: Text Left, Image Right (Building & Fact Modeling) */}
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div className="space-y-5 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <Building2 className="size-3.5" />
+                <span>{t('Deterministic Rulebook Engine', 'Motor Determinista de Reglas')}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display text-foreground tracking-tight leading-tight">
+                {t('Property Attribute Modeling & Exemption Evaluation', 'Modelado de Atributos y Evaluación de Exenciones')}
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {t(
+                  'Housing laws turn on intricate property facts: year built, certificate of occupancy, corporate vs individual ownership, unit count, and owner-occupancy status. RHLN evaluates every rule condition with exact mathematical determinism.',
+                  'Las leyes de vivienda dependen de datos específicos del inmueble: año de construcción, propiedad corporativa o individual y número de unidades. RHLN evalúa cada condición con determinismo exacto.'
+                )}
+              </p>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Kleene 3-Valued Logic: ', 'Lógica de Kleene: ')}</strong>
+                    {t('Emits transparent conditional verdicts (True, False, Unknown) without hallucinating missing facts.', 'Emite veredictos condicionales claros sin inventar información faltante.')}
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('4-Pillar Scorecard: ', 'Evaluación en 4 Pilares: ')}</strong>
+                    {t('Simultaneously evaluates Rent Increase Caps, Just Cause Eviction, Security Deposit Limits, and Algorithmic Bans.', 'Calcula límites de alquiler, causa justa de desalojo, depósitos y precios por software.')}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Link
+                  to="/lookup"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                >
+                  <span>{t('Run Property Fact Lookup', 'Consultar Datos de Propiedad')}</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative group overflow-hidden rounded-3xl border border-border shadow-xl aspect-4/3 sm:aspect-16/10 order-1 lg:order-2">
+              <img
+                src={building}
+                alt="Apartment Building Architecture"
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 sm:p-8">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-sm w-fit mb-2">
+                  <ShieldCheck className="size-3.5" />
+                  <span>{t('Assessor Fact Engine', 'Motor Catastral')}</span>
+                </span>
+                <p className="text-white font-display font-bold text-lg sm:text-xl">
+                  {t('500 Benchmark Properties Tested Deterministically', '500 Propiedades del Benchmark Auditadas')}
+                </p>
+                <p className="text-white/80 text-xs sm:text-sm mt-1 font-mono">
+                  Sub-millisecond Predicate Evaluation
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 3: Image Left, Text Right (Law Corpus & Quote Verification) */}
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div className="relative group overflow-hidden rounded-3xl border border-border shadow-xl aspect-4/3 sm:aspect-16/10">
+              <img
+                src={law}
+                alt="Public Housing Statutes and Law Books"
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 sm:p-8">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-600 text-white shadow-sm w-fit mb-2">
+                  <Scale className="size-3.5" />
+                  <span>{t('Verbatim Statutory Proof', 'Prueba Textual Verificada')}</span>
+                </span>
+                <p className="text-white font-display font-bold text-lg sm:text-xl">
+                  {t('257 Official Rules with 99.2% Verbatim Fidelity', '257 Reglas con 99.2% de Coincidencia Textual')}
+                </p>
+                <p className="text-white/80 text-xs sm:text-sm mt-1 font-mono">
+                  87 Housing Law Corpus Documents
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                <FileText className="size-3.5" />
+                <span>{t('Grounded Legal Verification', 'Verificación Legal Fundamentada')}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display text-foreground tracking-tight leading-tight">
+                {t('Strict Verbatim Text Quotes & Source Statute Grounding', 'Citas Textuales Estrictas y Fundamentación Legal')}
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {t(
+                  'Every single rule verdict is directly grounded in public statutes. We enforce a mandatory 20+ character exact verbatim substring requirement against raw corpus documents, completely eliminating hallucinations and unsupported claims.',
+                  'Cada veredicto legal está fundamentado en leyes públicas. Exigimos coincidencia textual exacta de al menos 20 caracteres con los documentos oficiales, eliminando cualquier tipo de alucinación.'
+                )}
+              </p>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Verifiable Citations: ', 'Citas Verificables: ')}</strong>
+                    {t('Exact statutory section references (e.g. Cal. Civ. Code § 1947.12, N.J.S.A. 2A:18-61.1).', 'Referencias legales exactas con enlaces al documento fuente.')}
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Schema-Conformant: ', 'Conforme al Esquema: ')}</strong>
+                    {t('All rules conform 100% to the official rule_record.schema.json format.', 'Todas las reglas cumplen al 100% con el estándar oficial de datos.')}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Link
+                  to="/rules"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                >
+                  <span>{t('Inspect Rules Registry', 'Consultar Registro de Reglas')}</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Showcase 4: Text Left, Image Right (Community & Longitudinal Changes) */}
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div className="space-y-5 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <Clock3 className="size-3.5" />
+                <span>{t('Longitudinal Change Monitor', 'Monitor de Cambios Legislativos')}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display text-foreground tracking-tight leading-tight">
+                {t('Longitudinal Statutory Shifts & Time-Series Impact (T1–T6)', 'Cambios Temporales e Impacto Longitudinal (T1–T6)')}
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {t(
+                  'Housing legislation changes constantly. RHLN tracks past, present, and pending legislative shifts across all benchmark properties, evaluating how new statutes (such as California AB 325, New Jersey FAIR Act, and Cambridge Algorithmic Pricing Ordinance) alter coverage on specific effective dates.',
+                  'Las leyes de vivienda evolucionan continuamente. RHLN evalúa el impacto de cambios legales pasados y futuros en todas las propiedades del benchmark conforme entran en vigor nuevas leyes.'
+                )}
+              </p>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('Time-Travel Queries: ', 'Consultas Temporales: ')}</strong>
+                    {t('Evaluate apartment compliance under custom As-Of dates (past, present, or upcoming years).', 'Evalúe el cumplimiento normativo en fechas pasadas, actuales o futuras.')}
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-foreground">
+                    <strong>{t('6 Benchmark Scenarios: ', '6 Escenarios de Prueba: ')}</strong>
+                    {t('Includes T1 (CA AB 325), T2 (Hoboken), T3 (NJ FAIR Act), T4 (MA pending), T5 (struck initiatives), and T6 (Cambridge).', 'Cubre todos los casos de prueba longitudinales T1 a T6.')}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Link
+                  to="/changes"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                >
+                  <span>{t('View Longitudinal Scenarios', 'Ver Escenarios de Cambio')}</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative group overflow-hidden rounded-3xl border border-border shadow-xl aspect-4/3 sm:aspect-16/10 order-1 lg:order-2">
+              <img
+                src={community}
+                alt="Urban Residential Community"
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 sm:p-8">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white shadow-sm w-fit mb-2">
+                  <History className="size-3.5" />
+                  <span>{t('Policy Transition Tracking', 'Transición Normativa')}</span>
+                </span>
+                <p className="text-white font-display font-bold text-lg sm:text-xl">
+                  {t('Address-by-Address Shift Simulation', 'Simulación de Impacto por Dirección')}
+                </p>
+                <p className="text-white/80 text-xs sm:text-sm mt-1 font-mono">
+                  All 6 Change Test Cases (T1–T6)
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -461,11 +675,11 @@ function LandingPage() {
                 <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <History className="size-5" />
                 </div>
-                <h3 className="text-lg font-bold text-foreground">{t('Statutory Change Scenarios (T1–T5)', 'Seguimiento de Cambios (T1–T5)')}</h3>
+                <h3 className="text-lg font-bold text-foreground">{t('Statutory Change Scenarios (T1–T6)', 'Seguimiento de Cambios (T1–T6)')}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {t(
-                    'Trace longitudinal legislative shifts across 5 explicit benchmark tests: California AB 325 algorithmic ban, Hoboken/Jersey City bans, NJ FAIR Act, Massachusetts pending bills, and struck ballot measures.',
-                    'Rastree cambios legislativos en 5 escenarios: AB 325, ordenanzas de Hoboken/JC, NJ FAIR Act y proyectos de ley de Massachusetts.'
+                    'Trace longitudinal legislative shifts across 6 benchmark tests: California AB 325 algorithmic ban, Hoboken/Jersey City bans, NJ FAIR Act, Massachusetts pending bills, struck ballot measures, and Cambridge ordinance.',
+                    'Rastree cambios legislativos en 6 escenarios: AB 325, ordenanzas de Hoboken/JC, NJ FAIR Act, proyectos de ley de Massachusetts y Cambridge.'
                   )}
                 </p>
               </div>
@@ -1098,7 +1312,7 @@ function LandingPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-6 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary transition-all"
             >
               <History className="size-4 text-primary" />
-              <span>{t('View Longitudinal Scenarios (T1–T5)', 'Ver Escenarios Temporales')}</span>
+              <span>{t('View Longitudinal Scenarios (T1–T6)', 'Ver Escenarios Temporales')}</span>
             </Link>
           </div>
         </div>

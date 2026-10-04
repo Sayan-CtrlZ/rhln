@@ -2,7 +2,7 @@
 
 import re
 from typing import Optional, Tuple
-from rhln.models import OfficialRuleRecord
+from backend.models import OfficialRuleRecord
 
 
 def normalize_whitespace(text: str) -> str:

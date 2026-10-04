@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from rhln.api.deps import get_as_of, get_request_id
-from rhln.api.errors import NotFoundError
-from rhln.api.schemas import DataEnvelope, wrap_data
-from rhln.models import OfficialRuleRecord
+from backend.api.deps import get_as_of, get_request_id
+from backend.api.errors import NotFoundError
+from backend.api.schemas import DataEnvelope, wrap_data
+from backend.models import OfficialRuleRecord
 
 router = APIRouter(tags=["Rules"])
 

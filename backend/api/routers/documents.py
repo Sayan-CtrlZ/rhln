@@ -7,10 +7,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from rhln.api.deps import get_request_id
-from rhln.api.errors import NotFoundError
-from rhln.api.schemas import DataEnvelope, wrap_data
-from rhln.ingest.loaders import CorpusLoader, DocumentMeta
+from backend.api.deps import get_request_id
+from backend.api.errors import NotFoundError
+from backend.api.schemas import DataEnvelope, wrap_data
+from backend.ingest.loaders import CorpusLoader, DocumentMeta
 
 router = APIRouter(tags=["Documents"])
 

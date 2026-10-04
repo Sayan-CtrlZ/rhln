@@ -2,13 +2,13 @@
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from rhln.api.main import app
-from rhln.change.cases import ChangeTrackingEngine
-from rhln.engine.predicate import PredicateEvaluator, TriBool, kleene_and, kleene_or, kleene_not
-from rhln.engine.lookup import AddressLookupEngine
-from rhln.extract.verify import verify_quote_span
-from rhln.geo.stack import JurisdictionResolver
-from rhln.models import SampleAddress, OfficialRuleRecord
+from backend.api.main import app
+from backend.change.cases import ChangeTrackingEngine
+from backend.engine.predicate import PredicateEvaluator, TriBool, kleene_and, kleene_or, kleene_not
+from backend.engine.lookup import AddressLookupEngine
+from backend.extract.verify import verify_quote_span
+from backend.geo.stack import JurisdictionResolver
+from backend.models import SampleAddress, OfficialRuleRecord
 
 
 def test_kleene_three_valued_logic():

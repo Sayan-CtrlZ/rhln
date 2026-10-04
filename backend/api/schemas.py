@@ -3,7 +3,7 @@
 from typing import Any, Generic, List, Optional, TypeVar
 from pydantic import BaseModel, Field
 
-from rhln.config import settings
+from backend.config import settings
 
 T = TypeVar("T")
 

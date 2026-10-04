@@ -1,7 +1,7 @@
 """Precedence and preemption resolution engine for local vs state laws."""
 
 from typing import List
-from rhln.models import AddressLookupRuleResult, OfficialRuleRecord
+from backend.models import AddressLookupRuleResult, OfficialRuleRecord
 
 
 class PrecedenceResolver:

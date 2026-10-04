@@ -8,10 +8,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from rhln.api.schemas import ErrorBody, ErrorDetail, ErrorEnvelope
-from rhln.config import settings
+from backend.api.schemas import ErrorBody, ErrorDetail, ErrorEnvelope
+from backend.config import settings
 
-logger = logging.getLogger("rhln.api.errors")
+logger = logging.getLogger("backend.api.errors")
 
 
 class RHLNException(Exception):

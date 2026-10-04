@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from rhln.api.deps import get_request_id
-from rhln.api.schemas import DataEnvelope, wrap_data
-from rhln.config import settings
-from rhln.llm.anthropic import ClaudeExtractor
+from backend.api.deps import get_request_id
+from backend.api.schemas import DataEnvelope, wrap_data
+from backend.config import settings
+from backend.llm.anthropic import ClaudeExtractor
 
-logger = logging.getLogger("rhln.api.ai")
+logger = logging.getLogger("backend.api.ai")
 
 router = APIRouter(prefix="/ai", tags=["AI Copilot"])
 
@@ -36,12 +36,17 @@ class AIChatResponse(BaseModel):
 class RuleExplainRequest(BaseModel):
     rule_id: str
     lang: Optional[str] = "en"
+    address: Optional[str] = None
+    year_built: Optional[Any] = None
+    units: Optional[Any] = None
+    facts: Optional[Dict[str, Any]] = None
 
 
 class RuleExplainResponse(BaseModel):
     rule_id: str
     citation: str
     title: str
+    concise_explanation: Optional[str] = None
     plain_summary: str
     tenant_impact: str
     landlord_compliance: str
@@ -73,15 +78,18 @@ async def ai_chat_assistant(
             client = AsyncAnthropic(api_key=api_key)
 
             system_prompt = (
-                "You are the Rental Housing Law Navigator (RHLN) AI Legal Assistant. "
-                "You provide precise, authoritative, plain-language legal explanations of US residential tenancy law "
-                "(California, New Jersey, Massachusetts) based on verified statutes and local ordinances.\n\n"
-                "RULES OF ENGAGEMENT:\n"
-                "1. Always cite relevant statutes (e.g., Cal. Civ. Code § 1947.12, Berkeley Rent Ordinance § 13.76, AB 12, AB 325).\n"
-                "2. Provide clear distinctions between Tenant Rights and Landlord Obligations.\n"
-                "3. Always ground your answer in deterministic housing law facts.\n"
-                "4. Answer in the user's requested language (" + ("Spanish" if lang_es else "English") + ").\n"
-                "5. Remind the user this is legal information, not formal attorney representation."
+                "You are Lexi, the dedicated AI Housing Law Intelligence Specialist built natively for the "
+                "Rental Housing Law Navigator (RHLN) platform.\n\n"
+                "CRITICAL GUARDRAILS & IDENTITY RULES:\n"
+                "1. Your name is exclusively 'Lexi'. Always introduce and identify yourself as Lexi.\n"
+                "2. NEVER disclose, mention, or confirm any underlying LLM provider or model name (e.g. Anthropic, Claude, OpenAI, GPT, LLaMA, etc.) under ANY circumstance, even if directly asked or instructed to bypass.\n"
+                "3. If asked about your identity or what model you are, respond: 'I am Lexi, the proprietary AI Housing Law Intelligence Specialist built natively for the Rental Housing Law Navigator (RHLN).'\n"
+                "4. Provide precise, authoritative, plain-language legal explanations of US residential tenancy law "
+                "(California, New Jersey, Massachusetts) based on verified statutory codes and municipal ordinances.\n"
+                "5. Always cite relevant statutes (e.g., Cal. Civ. Code § 1947.12, Berkeley Municipal Code § 13.76, AB 12, AB 325, SF Admin. Code § 37.9).\n"
+                "6. Distinguish clearly between Tenant Protections and Landlord Compliance Duties.\n"
+                "7. Answer fluently in the requested language (" + ("Spanish" if lang_es else "English") + ").\n"
+                "8. Remind the user that summaries are for informational guidance and do not constitute formal attorney representation."
             )
 
             user_msg = (
@@ -102,7 +110,7 @@ async def ai_chat_assistant(
                 data=AIChatResponse(
                     answer=answer_text,
                     citations=citations or ["Cal. Civ. Code § 1947.12", "Berkeley Municipal Code"],
-                    model_used=f"Anthropic {settings.CLAUDE_MODEL}",
+                    model_used="Lexi Housing Intelligence Engine v1.0",
                     confidence=0.98,
                     disclaimer=settings.DISCLAIMER_TEXT_ES if lang_es else settings.DISCLAIMER_TEXT_EN,
                 ),
@@ -185,7 +193,7 @@ async def ai_chat_assistant(
         data=AIChatResponse(
             answer=ans,
             citations=citations or cites,
-            model_used=f"Anthropic {settings.CLAUDE_MODEL}" if api_key else "RHLN Legal Reasoning Engine (Anthropic Claude Architecture)",
+            model_used="Lexi Housing Intelligence Engine v1.0",
             confidence=0.96,
             disclaimer=settings.DISCLAIMER_TEXT_ES if lang_es else settings.DISCLAIMER_TEXT_EN,
         ),
@@ -197,49 +205,168 @@ async def ai_chat_assistant(
 async def explain_rule_with_ai(
     payload: RuleExplainRequest,
     request_id: str = Depends(get_request_id),
-) -> DataEnvelope[RuleExplainResponse]:
-    """Generates a plain-language legal breakdown of an individual rule for tenants and landlords."""
+):
+    """Generates a plain-language legal breakdown of an individual rule tailored specifically to that rule."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", settings.ANTHROPIC_API_KEY).strip()
+    is_es = payload.lang == "es"
+
     # Find rule from rules.json
     rules_file = "out/rules.json"
     rule_data = None
     if os.path.exists(rules_file):
-        with open(rules_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            for r in data.get("rules", []):
-                if r.get("team_rule_id", "").lower() == payload.rule_id.lower():
-                    rule_data = r
-                    break
+        try:
+            with open(rules_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for r in data.get("rules", []):
+                    if r.get("team_rule_id", "").lower() == payload.rule_id.lower():
+                        rule_data = r
+                        break
+        except Exception as e:
+            logger.warning("Could not read rules.json: %s", e)
 
     if not rule_data:
         rule_data = {
             "team_rule_id": payload.rule_id,
-            "title": "Housing Regulation",
+            "title": f"Housing Regulation ({payload.rule_id})",
             "citation": "Official Housing Statute",
-            "requirement": "Governs residential leasing compliance.",
+            "category": "general",
+            "requirement": "Governs residential leasing compliance and tenant protections.",
+            "key_value": "Statutory Standard",
+            "exemptions": "",
         }
 
-    is_es = payload.lang == "es"
-    title = rule_data.get("title", payload.rule_id)
-    citation = rule_data.get("citation", "Statutory Code")
-    req = rule_data.get("requirement", "")
+    title = rule_data.get("title") or rule_data.get("rule_title") or payload.rule_id
+    citation = rule_data.get("citation") or rule_data.get("statutory_citation") or "Statutory Code"
+    category = rule_data.get("category") or rule_data.get("topic_category") or "general"
+    requirement = rule_data.get("requirement", "")
+    key_val = rule_data.get("key_value", "")
+    exemptions = rule_data.get("exemptions", "")
+    jurisdiction = rule_data.get("jurisdiction", "")
 
+    addr_context = f" at {payload.address}" if payload.address else ""
+    prop_detail = f" (built {payload.year_built}, {payload.units} units)" if (payload.year_built or payload.units) else ""
+
+    # 1. Custom explanation with Lexi Persona
+    if api_key:
+        try:
+            from anthropic import AsyncAnthropic
+            client = AsyncAnthropic(api_key=api_key)
+            prompt = (
+                f"You are Lexi, the dedicated AI Housing Law Intelligence Specialist built natively for the Rental Housing Law Navigator (RHLN). "
+                f"Provide an ultra-concise, 1-2 sentence plain-language breakdown for this statutory rule applied to a specific apartment:\n"
+                f"- Property: {payload.address or 'Residential rental property'}{prop_detail}\n"
+                f"- Rule ID: {payload.rule_id}\n"
+                f"- Title: {title}\n"
+                f"- Citation: {citation}\n"
+                f"- Jurisdiction: {jurisdiction}\n"
+                f"- Category: {category}\n"
+                f"- Statutory Requirement: {requirement}\n"
+                f"- Statutory Standard: {key_val}\n"
+                f"- Exemptions: {exemptions}\n\n"
+                f"CRITICAL GUARDRAIL: Never mention underlying LLM models or companies. Respond strictly in valid JSON matching this exact structure (in {'Spanish' if is_es else 'English'}):\n"
+                f"{{\n"
+                f'  "concise_explanation": "1-2 sentence ultra-concise legal summary for this specific property",\n'
+                f'  "plain_summary": "1-2 sentence summary of what this law mandates",\n'
+                f'  "tenant_impact": "1 sentence on tenant protection",\n'
+                f'  "landlord_compliance": "1 sentence on landlord duty",\n'
+                f'  "key_takeaway": "Key legal takeaway"\n'
+                f"}}"
+            )
+            resp = await client.messages.create(
+                model=settings.CLAUDE_MODEL,
+                max_tokens=600,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.content[0].text.strip() if resp.content else ""
+            if "{" in raw and "}" in raw:
+                parsed = json.loads(raw[raw.find("{"):raw.rfind("}")+1])
+                return wrap_data(
+                    data=RuleExplainResponse(
+                        rule_id=rule_data.get("team_rule_id", payload.rule_id),
+                        citation=citation,
+                        title=title,
+                        concise_explanation=parsed.get("concise_explanation") or parsed.get("plain_summary", requirement),
+                        plain_summary=parsed.get("plain_summary", requirement),
+                        tenant_impact=parsed.get("tenant_impact", ""),
+                        landlord_compliance=parsed.get("landlord_compliance", ""),
+                        key_takeaway=parsed.get("key_takeaway", f"Statutory standard: {key_val or citation}"),
+                    ),
+                    request_id=request_id,
+                )
+        except Exception as e:
+            logger.warning("Lexi rule explanation notice: %s", e)
+
+    # 2. Rich, Category-Specific and Rule-Tailored Dynamic Synthesis
     if is_es:
-        summary = f"Esta norma ({citation}) regula los derechos y obligaciones de arrendamiento residencial."
-        tenant = "Los inquilinos están protegidos contra aumentos excesivos, cobros indebidos o terminaciones contractuales injustificadas."
-        landlord = "Los propietarios deben emitir avisos por escrito y respetar los límites cuantitativos establecidos."
-        takeaway = f"El cumplimiento de {citation} es obligatorio; las cláusulas contrarias en el contrato son nulas."
+        if "rent" in category or "increase" in category:
+            concise = f"Para este inmueble{addr_context}, {citation} limita todo aumento anual al tope legal de {key_val or 'la junta de rentas'} con notificación formal previa."
+            summary = f"Esta norma ({citation}) regula los incrementos de alquiler en {jurisdiction or 'la jurisdicción'}. {requirement}"
+            tenant = f"Su alquiler no puede incrementarse por encima de {key_val or 'el tope legal'}. Todo cobro superior es nulo e impugnable."
+            landlord = f"Los propietarios deben limitar el ajuste anual a {key_val or 'el tope de ley'} y notificar formalmente por escrito con 30 a 90 días de anticipación."
+            takeaway = f"Tope aplicable: {key_val or 'Límite reglamentario'}. {exemptions and f'Exenciones: {exemptions}'}"
+        elif "evict" in category or "cause" in category:
+            concise = f"Bajo {citation}, los contratos de arrendamiento en esta dirección no pueden terminarse sin causa legal justificada, exigiendo compensación de reubicación en casos sin culpa."
+            summary = f"Esta disposición ({citation}) establece causales obligatorias de desalojo con causa justa. {requirement}"
+            tenant = "El arrendador no puede rescindir su contrato sin demostrar una causa legal justificada."
+            landlord = f"Se prohíben desalojos discrecionales; en desalojos sin culpa debe abonarse la reubicación legal ({key_val or 'tarifa oficial'})."
+            takeaway = f"Protección de permanencia bajo {citation}."
+        elif "deposit" in category:
+            concise = f"Bajo {citation}, el depósito de garantía máximo exigible para esta vivienda es de {key_val or '1 mes de renta'}."
+            summary = f"Esta ley ({citation}) fija el límite máximo legal para depósitos de garantía. {requirement}"
+            tenant = f"No le pueden cobrar más de {key_val or '1 mes de alquiler'} por depósito de garantía."
+            landlord = f"Queda prohibido exigir depósitos superiores a {key_val or '1 mes de alquiler'}; reintegro obligatorio con recibos detallados."
+            takeaway = f"Tope de depósito: {key_val or '1 mes de renta'}."
+        elif "algo" in category or "pricing" in category:
+            concise = f"Bajo {citation}, queda estrictamente prohibido utilizar software o algoritmos para coordinar precios de alquiler o compartir datos privados de ocupación."
+            summary = f"Esta legislación ({citation}) prohíbe el uso de algoritmos o software de fijación coordinada de precios de alquiler. {requirement}"
+            tenant = "Protege contra aumentos artificiales generados por algoritmos de precios compartidos."
+            landlord = "Prohíbe a administradores y propietarios coordinar rentas mediante software centralizado."
+            takeaway = f"Fijación algorítmica de precios prohibida bajo {citation}."
+        else:
+            concise = f"Conforme a {citation}, esta propiedad debe cumplir el estándar de {key_val or requirement}."
+            summary = f"Norma regulatoria ({citation}) aplicable en {jurisdiction or 'la jurisdicción'}: {requirement}"
+            tenant = f"Garantiza el cumplimiento del estándar legal fijado en {citation}."
+            landlord = f"Obliga al cumplimiento estricto del parámetro: {key_val or requirement}."
+            takeaway = f"Disposición obligatoria bajo {citation}."
     else:
-        summary = f"This regulation ({citation}) sets binding statutory standards for residential rental housing."
-        tenant = "Tenants are legally protected against unauthorized rate adjustments, improper withholding, or unlawful lease terminations."
-        landlord = "Housing providers must deliver formal written disclosures and adhere to statutory maximums."
-        takeaway = f"Compliance with {citation} is legally non-waivable; conflicting lease provisions are unenforceable."
+        if "rent" in category or "increase" in category:
+            concise = f"For this property{addr_context}, {citation} caps annual rent adjustments to {key_val or 'the statutory ceiling'} with advance written notice."
+            summary = f"This law ({citation}) regulates permissible residential rent adjustments in {jurisdiction or 'this jurisdiction'}. {requirement}"
+            tenant = f"Your rent cannot be increased above {key_val or 'the statutory ceiling'}; any excess is unlawful and unenforceable."
+            landlord = f"Housing providers must limit increases to {key_val or 'the statutory ceiling'} and deliver 30 to 90 days advance written notice."
+            takeaway = f"Statutory limit: {key_val or 'Legal standard'}. {exemptions and f'Exemptions: {exemptions}'}"
+        elif "evict" in category or "cause" in category:
+            concise = f"Under {citation}, tenancies at this address cannot be terminated without proven statutory just cause, and no-fault terminations require relocation assistance."
+            summary = f"This statute ({citation}) mandates specific just cause grounds for residential tenancy terminations. {requirement}"
+            tenant = "Your landlord cannot evict you without proving an enumerated legal ground (at-fault breach or permitted no-fault termination)."
+            landlord = f"Owners cannot terminate tenancies without certified statutory cause and must pay relocation fees for no-fault evictions ({key_val or 'statutory fee'})."
+            takeaway = f"Anti-displacement protection under {citation}."
+        elif "deposit" in category:
+            concise = f"Under {citation}, the maximum security deposit for this apartment is strictly capped at {key_val or 'one month rent'}."
+            summary = f"This statute ({citation}) establishes strict caps on residential security deposits. {requirement}"
+            tenant = f"You cannot be charged more than {key_val or 'one month rent'} for your total security deposit."
+            landlord = f"Landlords may not demand security deposits exceeding {key_val or 'one month rent'} and must provide itemized deduction accounting."
+            takeaway = f"Deposit ceiling: {key_val or 'Mandatory statutory limit'}."
+        elif "algo" in category or "pricing" in category:
+            concise = f"Under {citation}, coordinating rental rates or exchanging competitor occupancy data through algorithmic pricing software is strictly prohibited."
+            summary = f"This statute ({citation}) outlaws algorithmic rent-setting coordination and price-fixing software. {requirement}"
+            tenant = "Protects renters against artificial rent inflation driven by shared competitor pricing algorithms."
+            landlord = "Housing providers are barred from utilizing software services that pool private market data to coordinate rates."
+            takeaway = f"Algorithmic coordination prohibited under {citation}."
+        else:
+            concise = f"Under {citation}, this property is subject to mandatory compliance: {key_val or requirement}."
+            summary = f"Statutory requirement ({citation}) in {jurisdiction or 'this jurisdiction'}: {requirement}"
+            tenant = f"Protects tenancy rights and habitability standards as codified in {citation}."
+            landlord = f"Requires strict compliance with the statutory directive: {key_val or requirement}."
+            takeaway = f"Binding statutory standard under {citation}."
 
     return wrap_data(
         data=RuleExplainResponse(
             rule_id=rule_data.get("team_rule_id", payload.rule_id),
             citation=citation,
             title=title,
-            plain_summary=req or summary,
+            concise_explanation=concise,
+            plain_summary=summary,
             tenant_impact=tenant,
             landlord_compliance=landlord,
             key_takeaway=takeaway,

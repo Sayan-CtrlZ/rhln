@@ -15,10 +15,10 @@ import json
 import os
 import sys
 
-from rhln.change.cases import ChangeTrackingEngine
-from rhln.engine.lookup import AddressLookupEngine
-from rhln.extract.extractor import RuleExtractionPipeline
-from rhln.models import OfficialRuleRecord, SampleAddress
+from backend.change.cases import ChangeTrackingEngine
+from backend.engine.lookup import AddressLookupEngine
+from backend.extract.extractor import RuleExtractionPipeline
+from backend.models import OfficialRuleRecord, SampleAddress
 
 
 def parse_args():
@@ -104,7 +104,7 @@ def run_changes(args):
 
 
 def run_validate(args):
-    from rhln.extract.verify import verify_quote_span
+    from backend.extract.verify import verify_quote_span
 
     print("=" * 72)
     print("  RHLN INDEPENDENT SYSTEM VALIDATION & DELIVERABLE AUDIT")

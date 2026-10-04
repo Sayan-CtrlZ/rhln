@@ -80,9 +80,9 @@ export function AICopilotDrawer({
     {
       sender: 'assistant',
       text: es
-        ? 'Hola, soy el Asistente Legal Inteligente de RHLN, impulsado por Anthropic Claude. Pregúntame sobre aumentos de alquiler, causa justa de desalojo, depósitos de garantía o leyes algorítmicas para cualquier dirección.'
-        : 'Hello, I am the RHLN AI Legal Copilot powered by Anthropic Claude. Ask me anything about rent increase limits, just cause evictions, security deposits, or algorithmic bans for your apartment address.',
-      model: 'Anthropic Claude',
+        ? 'Hola, soy Lexi, tu Especialista en Inteligencia Legal de Vivienda de RHLN. Pregúntame sobre aumentos de alquiler, causa justa de desalojo, depósitos de garantía o regulaciones de fijación algorítmica para cualquier dirección.'
+        : 'Hello, I am Lexi, your RHLN AI Housing Law Intelligence Specialist. Ask me anything about rent increase limits, just cause evictions, security deposits, or algorithmic bans for your apartment address.',
+      model: 'Lexi Intelligence v1.0',
     },
   ]);
 
@@ -121,8 +121,8 @@ export function AICopilotDrawer({
         {
           sender: 'assistant',
           text: es
-            ? 'Error al consultar el modelo de IA. Verifique que el servicio esté activo.'
-            : 'Error querying the AI model. Please verify backend service connection.',
+            ? 'Error al consultar el servicio de Lexi. Verifique que la conexión esté activa.'
+            : 'Error querying the Lexi AI service. Please verify backend connection.',
         },
       ]);
     } finally {
@@ -156,11 +156,11 @@ export function AICopilotDrawer({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm sm:text-base">
-                  {t('AI Legal Copilot', 'Copiloto Legal de IA')}
+                  {t('Lexi — AI Housing Specialist', 'Lexi — Especialista Legal de IA')}
                 </h3>
-                <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                   <Cpu className="size-2.5" />
-                  Anthropic Claude
+                  Lexi AI
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
@@ -244,7 +244,7 @@ export function AICopilotDrawer({
           {loading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
               <Loader2 className="size-4 animate-spin text-primary" />
-              <span>{t('Claude is analyzing housing law statutes...', 'Claude está analizando la legislación...')}</span>
+              <span>{t('Lexi is analyzing housing law statutes...', 'Lexi está analizando la legislación...')}</span>
             </div>
           )}
         </div>

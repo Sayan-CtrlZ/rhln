@@ -2,7 +2,7 @@
 
 import uuid
 from typing import Any, Callable, Dict, List
-from rhln.config import settings
+from backend.config import settings
 
 
 class RequestContextMiddleware:

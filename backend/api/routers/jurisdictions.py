@@ -6,12 +6,12 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from rhln.api.deps import get_request_id, verify_api_key
-from rhln.api.errors import NotFoundError
-from rhln.api.geo_catalog import JURISDICTION_CATALOG
-from rhln.api.schemas import DataEnvelope, wrap_data
-from rhln.geo.stack import JurisdictionResolver
-from rhln.models import SampleAddress
+from backend.api.deps import get_request_id, verify_api_key
+from backend.api.errors import NotFoundError
+from backend.api.geo_catalog import JURISDICTION_CATALOG
+from backend.api.schemas import DataEnvelope, wrap_data
+from backend.geo.stack import JurisdictionResolver
+from backend.models import SampleAddress
 
 router = APIRouter(tags=["Jurisdictions"])
 geo_resolver = JurisdictionResolver()

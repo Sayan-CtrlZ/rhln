@@ -3,8 +3,8 @@
 import json
 import os
 from typing import Dict, List, Optional
-from rhln.geo.stack import JurisdictionResolver
-from rhln.models import ChangeTestCaseResult, ChangesDeliverable, SampleAddress
+from backend.geo.stack import JurisdictionResolver
+from backend.models import ChangeTestCaseResult, ChangesDeliverable, SampleAddress
 
 
 class ChangeTrackingEngine:

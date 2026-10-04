@@ -8,15 +8,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from rhln.api.errors import (
+from backend.api.errors import (
     RHLNException,
     http_exception_handler,
     rhln_exception_handler,
     unhandled_exception_handler,
     validation_exception_handler,
 )
-from rhln.api.middleware import RequestContextMiddleware
-from rhln.api.routers import (
+from backend.api.middleware import RequestContextMiddleware
+from backend.api.routers import (
     ai,
     changes,
     documents,
@@ -27,17 +27,17 @@ from rhln.api.routers import (
     rules,
     system,
 )
-from rhln.config import settings
+from backend.config import settings
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
 )
-logger = logging.getLogger("rhln.api")
+logger = logging.getLogger("backend.api")
 
 
-from rhln.db import seed_database_if_needed
+from backend.db import seed_database_if_needed
 
 
 @asynccontextmanager
@@ -67,7 +67,7 @@ TAGS_METADATA = [
     },
     {
         "name": "Extraction",
-        "description": "Offline Claude rule extraction pipeline status and execution triggers.",
+        "description": "Offline Lexi statutory rule extraction pipeline status and execution triggers.",
     },
     {
         "name": "Rules",
@@ -79,7 +79,7 @@ TAGS_METADATA = [
     },
     {
         "name": "Change Tracking",
-        "description": "Longitudinal change evaluation scenarios (T1 through T5) tracking statutory shifts.",
+        "description": "Longitudinal change evaluation scenarios (T1 through T6) tracking statutory shifts.",
     },
     {
         "name": "Exports & Evaluation",
@@ -98,7 +98,7 @@ def create_app() -> FastAPI:
             "An AI and deterministic logic system that turns thousands of pages of housing statutes into "
             "accurate, cited, address-level answers for renters, housing advocates, and property managers.\n\n"
             "### Core Architectural Tenet\n"
-            "*'The model reads, code decides'*: LLMs (Claude Sonnet 5.5) extract structured rules offline; "
+            "*'The model reads, code decides'*: Lexi extracts structured rules offline; "
             "online address lookup is 100% deterministic Python code using Kleene 3-valued logic.\n\n"
             "**Disclaimer:** Not legal advice. This tool summarizes public law for information only."
         ),

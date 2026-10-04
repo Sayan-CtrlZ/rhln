@@ -177,7 +177,7 @@ function ApiPage() {
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border">
                 <span className="text-muted-foreground">{t('Extraction Engine:', 'Motor de Extracción:')}</span>
-                <span className="font-mono font-bold text-foreground">Claude Sonnet 5.5</span>
+                <span className="font-mono font-bold text-foreground">Lexi Regulatory Parser v1.0</span>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-muted-foreground">{t('Logic Standard:', 'Estándar Lógico:')}</span>

@@ -4,8 +4,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from rhln.api.deps import get_request_id, verify_api_key
-from rhln.api.schemas import DataEnvelope, wrap_data
+from backend.api.deps import get_request_id, verify_api_key
+from backend.api.schemas import DataEnvelope, wrap_data
 
 router = APIRouter(prefix="/extraction", tags=["Extraction"])
 

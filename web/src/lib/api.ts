@@ -402,7 +402,7 @@ export async function fetchChangeCase(caseId: string): Promise<ChangeCaseItem> {
 }
 
 /* ========================================================================= */
-/* AI Legal Copilot & Plain-Language Explanation (Anthropic Claude)          */
+/* Lexi AI Legal Specialist & Plain-Language Explanation                     */
 /* ========================================================================= */
 
 export interface AIChatResult {
@@ -436,17 +436,28 @@ export interface RuleAIExplanation {
   rule_id: string;
   citation: string;
   title: string;
+  concise_explanation?: string;
   plain_summary: string;
   tenant_impact: string;
   landlord_compliance: string;
   key_takeaway: string;
 }
 
-export async function explainRuleWithAI(ruleId: string, lang = 'en'): Promise<RuleAIExplanation> {
+export async function explainRuleWithAI(
+  ruleId: string,
+  lang = 'en',
+  context?: { address?: string; year_built?: number | string; units?: number | string }
+): Promise<RuleAIExplanation> {
   const res = await fetch(`${API_BASE}/ai/explain-rule`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rule_id: ruleId, lang }),
+    body: JSON.stringify({
+      rule_id: ruleId,
+      lang,
+      address: context?.address,
+      year_built: context?.year_built ? Number(context.year_built) : undefined,
+      units: context?.units ? Number(context.units) : undefined,
+    }),
   });
   if (!res.ok) {
     throw new Error(`Rule explanation failed with status ${res.status}`);

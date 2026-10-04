@@ -4,8 +4,8 @@ from typing import Optional
 import re
 from fastapi import Header, Query, Request
 
-from rhln.api.errors import BadRequestError, UnauthorizedError
-from rhln.config import settings
+from backend.api.errors import BadRequestError, UnauthorizedError
+from backend.config import settings
 
 ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 

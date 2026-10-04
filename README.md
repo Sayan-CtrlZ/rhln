@@ -85,7 +85,7 @@ The frontend application (`web/`) is an end-to-end multi-page web application bu
 | **`/`** | **Official Landing Page**<br>System introduction, value proposition, quick-evaluator preview, and architectural tenets. | `GET /api/v1/meta`, `GET /health` |
 | **`/lookup`** | **Address Lookup & Rule Engine**<br>Evaluate apartment addresses against statutory rules with property facts, As-Of calendar presets, Kleene logic badges, and verbatim evidence drawer. | `POST /api/v1/lookup`, `GET /api/v1/properties` |
 | **`/jurisdictions`** | **Jurisdictions Catalog & Stack Resolver**<br>Directory of all 13 supported jurisdictions across CA, NJ, and MA with rule counts and an interactive geocode/spatial resolution sandbox. | `GET /api/v1/jurisdictions`, `POST /api/v1/resolve` |
-| **`/changes`** | **Change Tracking Benchmark (T1–T5)**<br>Longitudinal scenario center for T1 through T5, with visual before/after timeline comparison, address-level status shifts, and conflict flags. | `GET /api/v1/changes/cases`, `GET /api/v1/changes/cases/{id}` |
+| **`/changes`** | **Change Tracking Benchmark (T1–T6)**<br>Longitudinal scenario center for T1 through T6, with visual before/after timeline comparison, address-level status shifts, and conflict flags. | `GET /api/v1/changes/cases`, `GET /api/v1/changes/cases/{id}` |
 | **`/rules`** | **Housing Rules Registry**<br>Searchable and filterable catalog of all extracted rules with statutory citations, criteria, effective dates, and verified quotes. | `GET /api/v1/rules`, `GET /api/v1/rules/{id}` |
 | **`/documents`** | **Corpus Law Library & Reader**<br>Manifest browser of all 87 public housing statutes with an in-app full legal text modal reader. | `GET /api/v1/documents`, `GET /api/v1/documents/{id}/text` |
 | **`/api`** | **API Reference & Deliverables Hub**<br>Direct links to interactive Swagger UI (`/docs`), ReDoc (`/redoc`), OpenAPI spec, and downloads for scored files (`rules.json`, `lookups.json`, `changes.json`, `rhln_deliverables.zip`). | `GET /health`, `GET /api/v1/meta`, Deliverables Exports |
@@ -100,7 +100,7 @@ The repository includes pre-generated, schema-validated deliverables ready for e
 | :--- | :--- | :--- |
 | [`out/rules.json`](file:///home/anonym/Documents/rhln/out/rules.json) | Extracted statutory rules with verified quotes and criteria | Validated against `rule_record.schema.json` |
 | [`out/lookups.json`](file:///home/anonym/Documents/rhln/out/lookups.json) | Deterministic rulebook evaluations on `2026-10-01` | All 500 benchmark sample addresses |
-| [`out/changes.json`](file:///home/anonym/Documents/rhln/out/changes.json) | Longitudinal change tracking evaluations | Official benchmark cases T1–T5 |
+| [`out/changes.json`](file:///home/anonym/Documents/rhln/out/changes.json) | Longitudinal change tracking evaluations | Official benchmark cases T1–T6 |
 | [`rhln_deliverables.zip`](http://localhost:8000/api/v1/exports/bundle/download) | Complete ZIP archive of all 3 scored files | Instant evaluator download |
 
 ### Regenerating Scored Deliverables via CLI
@@ -114,7 +114,7 @@ python cli.py extract --doc D001
 # 2. Run deterministic lookup across all 500 addresses
 python cli.py lookup-all --as-of 2026-10-01
 
-# 3. Evaluate change tracking benchmark cases T1-T5
+# 3. Evaluate change tracking benchmark cases T1-T6
 python cli.py change-all
 
 # 4. Export all scored files and validate schemas
@@ -143,7 +143,7 @@ All endpoints are hosted under `/api/v1/` and comply with the RHLN Technical Req
 | **Lookups** | `POST` | `/api/v1/lookup` | Evaluate rules for an address and property facts | TRD 8.3 |
 | **Lookups** | `GET` | `/api/v1/properties` | List 500 sample addresses with assessor facts | TRD 8.3 |
 | **Lookups** | `GET` | `/api/v1/lookup/export` | Download scored `out/lookups.json` (500 addresses) | TRD 8.3 |
-| **Change Tracking** | `GET` | `/api/v1/changes/cases` | List benchmark change scenarios T1 through T5 | TRD 8.3 |
+| **Change Tracking** | `GET` | `/api/v1/changes/cases` | List benchmark change scenarios T1 through T6 | TRD 8.3 |
 | **Change Tracking** | `GET` | `/api/v1/changes/cases/{id}` | Get detail and status shifts for specific change case | TRD 8.3 |
 | **Change Tracking** | `GET` | `/api/v1/changes/export` | Download scored `out/changes.json` | TRD 8.3 |
 | **Exports** | `GET` | `/api/v1/exports/bundle/latest` | Metadata summary of latest exported deliverables | TRD 8.3 |
@@ -227,7 +227,7 @@ python cli.py validate
 This command independently audits:
 1. **Module A (Citation Metric):** Checks all rules in `out/rules.json` against supplied corpus documents (`data/corpus/text/`) verifying exact substring matches ($\ge 20$ chars). Only supplied, verifiable corpus text is counted.
 2. **Module B (Address Lookups):** Audits `out/lookups.json` across all 500 benchmark sample properties for 100% deterministic coverage with Kleene logic.
-3. **Module C (Change Cases T1–T5):** Validates all 5 explicit change tests defined at kickoff (`T1` through `T5`), confirming zero reliance on any removed "hour-16" ordinance.
+3. **Module C (Change Cases T1–T6):** Validates all 6 benchmark change tests (`T1` through `T6`), including the dynamic pipeline for synthetic/unseen ordinances (`T6` Cambridge Algorithmic Pricing Ordinance).
 
 ---
 
@@ -248,7 +248,7 @@ rhln/
 ├── cli.py                        # Unified CLI (extract, lookup-all, change-all, export-all)
 ├── main.py                       # ASGI server entrypoint
 ├── requirements.txt              # Backend Python dependencies
-├── rhln/
+├── backend/
 │   ├── config.py                 # Pydantic v2 configuration & env loader
 │   ├── models.py                 # Core domain models & Pydantic schemas
 │   ├── api/                      # FastAPI service layer
@@ -258,11 +258,11 @@ rhln/
 │   │   ├── schemas.py            # Generic DataEnvelope[T] models
 │   │   └── routers/              # 8 modular routers (all TRD endpoints)
 │   ├── ingest/                   # Corpus loaders & document chunker
-│   ├── llm/                      # Anthropic Claude client
+│   ├── llm/                      # LLM extractor & Lexi reasoning client
 │   ├── extract/                  # Structured rule extraction & quote verification
 │   ├── geo/                      # Spatial jurisdiction stack resolver
 │   ├── engine/                   # Kleene logic predicate & precedence evaluator
-│   └── change/                   # Benchmark longitudinal change evaluator (T1–T5)
+│   └── change/                   # Benchmark longitudinal change evaluator (T1–T6)
 ├── web/                          # Modern React 19 / TanStack Start frontend
 │   ├── src/routes/index.tsx      # Comprehensive 5-tab UI application
 │   ├── src/lib/api.ts            # Typed client connecting all 23+ backend endpoints
@@ -274,7 +274,7 @@ rhln/
 ├── out/                          # Generated Scored Deliverables
 │   ├── rules.json                # Extracted rules validated against schema
 │   ├── lookups.json              # 500 address evaluations on 2026-10-01
-│   └── changes.json              # Evaluated change cases T1–T5
+│   └── changes.json              # Evaluated change cases T1–T6
 ├── reference/                    # Hackathon PRD, TRD, and original starter materials
 └── tests/                        # Comprehensive pytest test suite
 ```

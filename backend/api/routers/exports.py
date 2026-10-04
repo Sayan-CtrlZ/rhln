@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from rhln.api.deps import get_request_id
-from rhln.api.schemas import DataEnvelope, wrap_data
+from backend.api.deps import get_request_id
+from backend.api.schemas import DataEnvelope, wrap_data
 
 router = APIRouter(tags=["Exports & Evaluation"])
 

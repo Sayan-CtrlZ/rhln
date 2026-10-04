@@ -2,10 +2,10 @@
 
 import json
 from typing import Dict, List, Optional
-from rhln.engine.predicate import PredicateEvaluator, TriBool
-from rhln.engine.precedence import PrecedenceResolver
-from rhln.geo.stack import JurisdictionResolver, ResolvedLocation
-from rhln.models import (
+from backend.engine.predicate import PredicateEvaluator, TriBool
+from backend.engine.precedence import PrecedenceResolver
+from backend.geo.stack import JurisdictionResolver, ResolvedLocation
+from backend.models import (
     AddressLookupRuleResult,
     LookupsDeliverable,
     OfficialRuleRecord,

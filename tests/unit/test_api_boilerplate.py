@@ -2,8 +2,8 @@
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from rhln.api.main import app
-from rhln.config import settings
+from backend.api.main import app
+from backend.config import settings
 
 
 @pytest.mark.anyio

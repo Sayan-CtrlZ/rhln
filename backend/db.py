@@ -28,12 +28,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-logger = logging.getLogger("rhln.db")
+logger = logging.getLogger("backend.db")
 
 Base = declarative_base()
 
-# Determine database URL: default to SQLite in data/rhln.db for local dev
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "rhln.db"
+# Determine database URL: default to SQLite in data/backend.db for local dev
+DB_PATH = Path(__file__).resolve().parent.parent / "data" / "backend.db"
 DEFAULT_SQLITE_URL = f"sqlite:///{DB_PATH}"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", DEFAULT_SQLITE_URL)

@@ -4,9 +4,9 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from rhln.api.deps import get_lang, get_request_id
-from rhln.api.schemas import DataEnvelope, wrap_data
-from rhln.config import settings
+from backend.api.deps import get_lang, get_request_id
+from backend.api.schemas import DataEnvelope, wrap_data
+from backend.config import settings
 
 router = APIRouter(tags=["System"])
 
