@@ -1,869 +1,1108 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import * as Dialog from '@radix-ui/react-dialog';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useState } from 'react';
 import {
-  ArrowUpRight,
-  ArrowRight,
-  Building2,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  CircleHelp,
-  Clock3,
-  ExternalLink,
-  FileText,
-  Globe2,
   House,
-  Info,
-  MapPin,
-  Moon,
   Search,
+  Landmark,
+  History,
+  Scale,
+  Library,
+  Terminal,
+  ArrowRight,
   ShieldCheck,
-  SlidersHorizontal,
-  Sun,
-  TriangleAlert,
+  CheckCircle2,
+  Cpu,
+  Layers,
+  Sparkles,
+  MapPin,
+  Code2,
+  ChevronDown,
+  Building2,
+  Users,
+  FileText,
+  Gavel,
+  Clock3,
+  HelpCircle,
+  Zap,
   TrendingUp,
   Wallet,
-  X,
-  Loader2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { rules as initialRules, type Language, type Rule } from '@/lib/housing-rules';
-import {
-  lookupAddress,
-  fetchSampleProperties,
-  type BackendLookupResponse,
-  type SamplePropertyItem,
-} from '@/lib/api';
-import housing from '@/assets/hero-lease.jpg';
+import { useLang } from './__root';
 import building from '@/assets/hero-building.jpg';
 import law from '@/assets/hero-law.jpg';
+import housing from '@/assets/hero-lease.jpg';
+import civic from '@/assets/hero-civic.jpg';
+import community from '@/assets/hero-community.jpg';
 
 export const Route = createFileRoute('/')({
-  head: () => ({
-    meta: [
-      { title: 'Rental Housing Law Navigator | Rules and Sources' },
-      {
-        name: 'description',
-        content:
-          'Explore rental housing rules, review building conditions, and follow links to verified legal sources.',
-      },
-      { property: 'og:title', content: 'Rental Housing Law Navigator | Rules and Sources' },
-      {
-        property: 'og:description',
-        content:
-          'A clear view of rental housing rules, applicability, and public sources. Not legal advice.',
-      },
-      { property: 'og:type', content: 'website' },
-      { name: 'twitter:card', content: 'summary_large_image' },
-    ],
-  }),
-  component: Index,
+  component: LandingPage,
 });
 
-const ruleIcons: Record<string, any> = {
-  increase: TrendingUp,
-  rent_increase_limits: TrendingUp,
-  shield: ShieldCheck,
-  just_cause_eviction: ShieldCheck,
-  wallet: Wallet,
-  security_deposits: Wallet,
-  screening: FileText,
-  application_screening_fees: FileText,
-  screening_restrictions: FileText,
-  algorithm: SlidersHorizontal,
-  algorithmic_rent_setting: SlidersHorizontal,
-};
-
-function getCategoryIcon(cat?: string) {
-  if (!cat) return TrendingUp;
-  return ruleIcons[cat] || FileText;
-}
-
-/** Wide screens keep the source panel beside the list; narrow screens use a sheet. */
-function useIsWide() {
-  const [wide, setWide] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia('(min-width: 1024px)');
-    const sync = () => setWide(query.matches);
-    sync();
-    query.addEventListener('change', sync);
-    return () => query.removeEventListener('change', sync);
-  }, []);
-  return wide;
-}
-
-type Copy = (en: string, es: string) => string;
-
-function Index() {
-  const [language, setLanguage] = useState<Language>('en');
+export function LandingPage() {
+  const { t, language } = useLang();
   const es = language === 'es';
-  const t: Copy = (en, spanish) => (es ? spanish : en);
 
-  const [address, setAddress] = useState('2100 Shattuck Ave, Berkeley, CA 94704');
-  const [date, setDate] = useState<Date>(new Date(2026, 9, 1));
-  const [yearBuilt, setYearBuilt] = useState<string>('1962');
-  const [units, setUnits] = useState<string>('20');
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<Rule | null>(null);
-  const [filter, setFilter] = useState<'all' | 'applies' | 'unknown'>('all');
-  const [expanded, setExpanded] = useState(false);
-  const [dark, setDark] = useState(false);
-  const wide = useIsWide();
+  // Active solution persona tab ('renter' | 'owner' | 'advocate' | 'agency')
+  const [activePersona, setActivePersona] = useState<'renter' | 'owner' | 'advocate' | 'agency'>('renter');
 
-  const [currentRules, setCurrentRules] = useState<Rule[]>(initialRules);
-  const [sampleProperties, setSampleProperties] = useState<SamplePropertyItem[]>([]);
-  const [jurisdictionStack, setJurisdictionStack] = useState<Array<{ name: string; level: string }>>([
-    { name: 'California', level: 'state' },
-    { name: 'City of Berkeley', level: 'city' },
-  ]);
+  // Interactive FAQ state
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  useEffect(() => {
-    setDark(window.localStorage.getItem('theme') === 'dark');
-    // Load sample addresses for quick suggestions
-    fetchSampleProperties(50).then((items) => {
-      if (items && items.length > 0) {
-        setSampleProperties(items);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    window.localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
-
-  const visibleRules = currentRules.filter(
-    (rule) => filter === 'all' || rule.status === filter
-  );
-
-  const appliesCount = currentRules.filter((r) => r.status === 'applies').length;
-  const unknownCount = currentRules.filter((r) => r.status === 'unknown').length;
-  const upcomingCount = currentRules.filter(
-    (r) => r.status === 'not_yet_effective' || r.status === 'pending'
-  ).length;
-
-  useEffect(() => {
-    if (!wide || !selected) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelected(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [wide, selected]);
-
-  const handlePropertySelect = (val: string) => {
-    setAddress(val);
-    const found = sampleProperties.find(
-      (p) => `${p.street_address}, ${p.postal_city}, ${p.state} ${p.zip}` === val
-    );
-    if (found) {
-      if (found.year_built) setYearBuilt(String(found.year_built));
-      if (found.units) setUnits(String(found.units));
-    }
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
-  const handleSearchSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSearched(true);
-    setFilter('all');
-    setLoading(true);
-
-    try {
-      // Split address into street, city, state, zip
-      const parts = address.split(',').map((p) => p.strip ? p.strip() : p.trim());
-      const street = parts[0] || address;
-      const city = parts[1] || 'Berkeley';
-      let state = 'CA';
-      let zip = '94704';
-      if (parts[2]) {
-        const stateZip = parts[2].trim().split(/\s+/);
-        state = stateZip[0] || 'CA';
-        zip = stateZip[1] || '94704';
-      }
-
-      const res: BackendLookupResponse = await lookupAddress({
-        street,
-        city,
-        state,
-        zip,
-        year_built: yearBuilt ? parseInt(yearBuilt, 10) : undefined,
-        units: units ? parseInt(units, 10) : undefined,
-        as_of: format(date, 'yyyy-MM-dd'),
-      });
-
-      if (res && res.results) {
-        if (res.stack && res.stack.length > 0) {
-          setJurisdictionStack(res.stack.map((s) => ({ name: s.name, level: s.level })));
-        }
-
-        const mappedRules: Rule[] = res.results.map((r, i) => {
-          const category = r.category || 'rent_increase_limits';
-          return {
-            id: r.team_rule_id || `rule-${i}`,
-            title: [r.title || r.team_rule_id, r.title || r.team_rule_id],
-            summary: [r.explanation, r.explanation],
-            citation: r.citation || 'Legal Source',
-            code: `${r.citation || ''} · ${r.team_rule_id}`,
-            status: r.result,
-            icon: (category in ruleIcons ? category : 'increase') as any,
-            source: 'https://berkeleyca.gov',
-            quotedSpan: r.explanation,
-            explanation: r.explanation,
-            conflictFlag: r.conflict_flag,
-            category: r.category,
-          };
-        });
-
-        if (mappedRules.length > 0) {
-          setCurrentRules(mappedRules);
-          setSelected(mappedRules[0]);
-        }
-      }
-    } catch (err) {
-      console.warn('Backend query error, staying on local data view:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const faqItems = [
+    {
+      qEn: 'How does RHLN distinguish a mailing address from a legal municipality?',
+      qEs: '¿Cómo distingue RHLN una dirección postal de un municipio legal?',
+      aEn: 'USPS mailing cities often differ from legal tax jurisdictions (e.g., unincorporated county areas or neighboring cities). RHLN resolves addresses through a strict 3-tier hierarchy (State → County → Legal Incorporated Municipality) cross-referenced against authoritative geographic boundary shapefiles rather than naive zip code guesses.',
+      aEs: 'Las ciudades postales a menudo difieren de las jurisdicciones legales. RHLN resuelve cada dirección mediante una jerarquía estricta de 3 niveles (Estado → Condado → Municipio Legal) cruzada con límites geográficos oficiales.',
+    },
+    {
+      qEn: 'What happens when state law and local municipal ordinances conflict?',
+      qEs: '¿Qué sucede cuando la ley estatal y una ordenanza municipal entran en conflicto?',
+      aEn: 'The engine applies codified constitutional preemption rules: local municipalities may establish more protective rent stabilization or just cause eviction ordinances unless explicitly preempted by state statutes (such as California Costa-Hawkins for single-family homes). Conflicting rules are explicitly evaluated and flagged in the audit trace.',
+      aEs: 'El motor aplica reglas de precedencia constitucional: los municipios locales pueden dictar normas más protectoras salvo que una ley estatal superior lo prohíba expresamente (como Costa-Hawkins). Las discrepancias se señalan explícitamente en el registro de auditoría.',
+    },
+    {
+      qEn: 'How are 15-year rolling window exemptions calculated for newer construction?',
+      qEs: '¿Cómo se calculan las exenciones de 15 años para construcciones recientes?',
+      aEn: 'Under statutes like California AB 1482 (Cal. Civ. Code § 1947.12), residential property with a certificate of occupancy issued within the last 15 years is exempt. RHLN computes the rolling age relative to the query evaluation date (`as_of`), ensuring that temporal eligibility updates automatically year over year.',
+      aEs: 'Leyes como AB 1482 en California eximen propiedades de menos de 15 años de antigüedad. RHLN calcula la edad respecto a la fecha de consulta (`as_of`), actualizando la vigencia automáticamente.',
+    },
+    {
+      qEn: 'What is Kleene 3-Valued Logic and why is it used instead of binary true/false?',
+      qEs: '¿Qué es la lógica de Kleene de 3 valores y por qué se utiliza?',
+      aEn: 'Real-world property records often lack specific assessor facts (e.g., exact unit count or unverified certificate of occupancy). Rather than hallucinating or guessing compliance, RHLN uses Kleene logic (True, False, Unknown) to return transparent conditional verdicts and explain precisely which missing facts are required to resolve coverage.',
+      aEs: 'Los registros catastrales a veces carecen de datos específicos. En vez de adivinar, RHLN usa lógica ternaria (Verdadero, Falso, Desconocido) para emitir veredictos condicionales transparentes.',
+    },
+    {
+      qEn: 'How are statutory changes (T1 through T5) tracked longitudinally?',
+      qEs: '¿Cómo se rastrean los cambios legislativos (T1 a T5)?',
+      aEn: 'RHLN models statutory shifts as time-series transitions. The system tests pending legislation (California AB 325, Hoboken ch. 158, New Jersey FAIR Act, Massachusetts S.2983, and struck ballot questions) across 500 benchmark properties to show exactly which units gain or lose coverage on specific effective dates.',
+      aEs: 'RHLN modela los cambios legales como transiciones temporales, evaluando leyes aprobadas o en trámite en 500 propiedades del benchmark.',
+    },
+    {
+      qEn: 'Does RHLN provide legal advice?',
+      qEs: '¿RHLN proporciona asesoramiento legal?',
+      aEn: 'No. RHLN is an automated regulatory intelligence engine providing structured informational summaries of enacted public housing laws. Every output cites verified, verbatim statutory text with exact document identifiers for independent legal review.',
+      aEs: 'No. RHLN es un motor de información normativa que resume leyes públicas. Cada resultado incluye citas textuales verificadas para su revisión jurídica independiente.',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="border-b border-border bg-secondary px-5 py-2.5 text-center">
-        <p className="mx-auto flex max-w-[1440px] items-center justify-center gap-2 text-xs font-bold sm:text-[13px]">
-          <TriangleAlert className="size-3.5 shrink-0 text-unknown" />
-          <span>
-            {t(
-              'Not legal advice. Summaries of public law. Always check the source text.',
-              'No es asesoría legal. Resúmenes de leyes públicas. Consulte siempre el texto original.'
-            )}
-          </span>
-        </p>
-      </div>
+    <div className="flex flex-col scroll-smooth">
+      {/* 1. HERO SECTION (#overview) */}
+      <section id="overview" className="relative overflow-hidden border-b border-border bg-linear-to-b from-card/80 via-background to-background py-16 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1 text-xs font-semibold text-primary shadow-2xs">
+                <Sparkles className="size-3.5 text-primary animate-pulse" />
+                <span>{t('Autonomous Multi-Jurisdictional Regulatory Intelligence', 'Inteligencia Normativa Autónoma Multijurisdiccional')}</span>
+              </div>
 
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-6 py-3 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-primary text-primary-foreground">
-              <House className="size-4" strokeWidth={2} />
-            </span>
-            <span className="font-display text-base leading-none sm:text-lg">
-              Rental Housing Law Navigator
-            </span>
-            <span className="chip hidden bg-secondary text-foreground sm:inline-flex">
-              Hackathon v1.0
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg border border-border bg-card text-muted-foreground"
-              aria-label={
-                dark
-                  ? t('Switch to light mode', 'Cambiar a modo claro')
-                  : t('Switch to dark mode', 'Cambiar a modo oscuro')
-              }
-              aria-pressed={dark}
-              onClick={() => setDark(!dark)}
-            >
-              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-            <Globe2 className="hidden size-4 text-muted-foreground sm:block" />
-            <div
-              className="flex items-center gap-1 rounded-lg border border-border bg-card p-1"
-              aria-label="Language"
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-pressed={!es}
-                className={`h-7 rounded-md px-3 text-xs font-bold ${
-                  !es
-                    ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
-                    : 'text-muted-foreground'
-                }`}
-                onClick={() => setLanguage('en')}
-              >
-                EN
-              </Button>
-              <span className="text-border">|</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-pressed={es}
-                className={`h-7 rounded-md px-3 text-xs font-bold ${
-                  es
-                    ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
-                    : 'text-muted-foreground'
-                }`}
-                onClick={() => setLanguage('es')}
-              >
-                ES
-              </Button>
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.08] text-foreground">
+                {t(
+                  'From Thousands of Pages of Housing Law to Instant, Address-Level Answers.',
+                  'De Miles de Páginas de Leyes de Vivienda a Respuestas Precisas por Dirección.'
+                )}
+              </h1>
+
+              <p className="mt-5 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+                {t(
+                  'Which rental rules apply to an apartment today, and what is about to change? RHLN turns complex state statutes, county codes, and municipal ordinances into cited, deterministic, verifiable compliance intelligence for renters, housing providers, and legal aid attorneys.',
+                  '¿Qué leyes de vivienda aplican hoy a una dirección y cuáles están por cambiar? RHLN transforma códigos estatales, de condado y municipales en inteligencia normativa verificable con citas textuales.'
+                )}
+              </p>
+
+              {/* Enterprise CTA Action Group */}
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/lookup"
+                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  <Search className="size-4" />
+                  <span>{t('Launch Compliance Navigator', 'Iniciar Navegador de Cumplimiento')}</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+
+                <a
+                  href="#how-it-works"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/80 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
+                >
+                  <Zap className="size-4 text-primary" />
+                  <span>{t('Explore Architecture', 'Ver Arquitectura')}</span>
+                </a>
+
+                <Link
+                  to="/changes"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/80 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
+                >
+                  <History className="size-4 text-primary" />
+                  <span>{t('Change Scenarios (T1–T5)', 'Casos de Cambio (T1–T5)')}</span>
+                </Link>
+              </div>
+
+              {/* Enterprise Capabilities Strip */}
+              <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 pt-6 border-t border-border/80">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('500 Benchmark Addresses', '500 Direcciones')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('100% Verbatim Citations', 'Citas Textuales 100%')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('Kleene 3-Valued Logic', 'Lógica de Kleene')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs font-medium text-muted-foreground">{t('Sub-Millisecond Engine', 'Motor Sub-milisegundo')}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </header>
 
-      <section className="border-b border-border bg-secondary">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-10 px-6 py-14 sm:px-8 sm:py-20 lg:flex-nowrap">
-          <div className="min-w-0 flex-1">
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-              {t('A calm place to start', 'Un lugar tranquilo para empezar')}
-            </p>
-            <h1 className="text-4xl leading-[1.15] sm:text-[46px] sm:leading-[1.12]">
-              {t('Know the rules.', 'Conozca las reglas.')}
-              <br />
-              {t('Know your home.', 'Conozca su hogar.')}
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
-              {t(
-                'Rental housing laws in plain language. Enter an address to see the rules and the verified sources behind them.',
-                'Leyes de vivienda en lenguaje sencillo. Ingrese una dirección para ver las reglas y sus fuentes verificadas.'
-              )}
-            </p>
-            <ul className="mt-8 grid max-w-md gap-y-2.5 text-xs font-semibold">
-              <li className="flex items-center gap-2">
-                <Check className="size-4 shrink-0 text-applies" />
-                {t('Plain-language summaries', 'Resúmenes en lenguaje sencillo')}
-              </li>
-              <li className="flex items-center gap-2">
-                <FileText className="size-4 shrink-0 text-muted-foreground" />
-                {t('Every rule cited to verified source text', 'Cada regla citada con texto original')}
-              </li>
-              <li className="flex items-center gap-2">
-                <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                {t('Deterministic three-valued logic', 'Lógica determinista de tres valores')}
-              </li>
-            </ul>
-          </div>
-          <div className="grid w-full max-w-[640px] shrink-0 grid-cols-2 gap-3 xl:gap-4">
-            <img
-              src={building}
-              alt="Apartment building"
-              width={928}
-              height={720}
-              className="col-span-2 h-[220px] w-full rounded-lg border border-border object-cover shadow-sm xl:h-[260px]"
-            />
-            <img
-              src={housing}
-              alt="Tenant reviewing lease"
-              width={1280}
-              height={720}
-              loading="lazy"
-              className="h-[150px] w-full rounded-lg border border-border object-cover shadow-sm xl:h-[180px]"
-            />
-            <img
-              src={law}
-              alt="Law library"
-              width={928}
-              height={720}
-              loading="lazy"
-              className="h-[150px] w-full rounded-lg border border-border object-cover shadow-sm xl:h-[180px]"
-            />
+            {/* Right Hero: Live Compliance Intelligence Preview Card & Imagery */}
+            <div className="flex flex-col gap-4">
+              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xl relative overflow-hidden">
+                <div className="flex items-center justify-between border-b border-border/80 pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {t('Live Compliance Scorecard Preview', 'Vista Previa de Inteligencia Normativa')}
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-mono font-medium text-muted-foreground">
+                    As-Of: 2026-10-01
+                  </span>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                    <MapPin className="size-4 text-primary shrink-0" />
+                    <span>2150 Shattuck Ave, Berkeley, CA 94704</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5 ml-5">
+                    Multi-Family · 18 Units · Built 1972 · Alameda County
+                  </p>
+                </div>
+
+                {/* 4 Pillars Preview */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        {t('Rent Cap Protection', 'Control de Renta')}
+                      </span>
+                      <TrendingUp className="size-3 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <span className="text-sm font-extrabold text-foreground block">
+                      Local Cap Applies
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block font-mono">
+                      Berkeley Rent Ordinance
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        {t('Eviction Rights', 'Causa Justa')}
+                      </span>
+                      <ShieldCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <span className="text-sm font-extrabold text-foreground block">
+                      Just Cause Required
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block font-mono">
+                      Cal. Civ. Code § 1946.2
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                        {t('Security Deposit', 'Fianza / Depósito')}
+                      </span>
+                      <Wallet className="size-3 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-sm font-extrabold text-foreground block">
+                      1 Month Max (AB 12)
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block font-mono">
+                      Cal. Civ. Code § 1950.5
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                        {t('Algorithmic Pricing', 'Precios por Software')}
+                      </span>
+                      <SlidersHorizontal className="size-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="text-sm font-extrabold text-foreground block">
+                      Prohibited (AB 325)
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block font-mono">
+                      Cal. Bus. & Prof. § 16700
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3.5 rounded-lg border border-border/80 bg-secondary/40 p-2.5 text-[11px] font-mono text-muted-foreground">
+                  <span className="font-bold text-foreground">Verified Verbatim Quote: </span>
+                  <span className="italic">"...an owner of residential real property shall not, over the course of any 12-month period, increase the gross rental rate..."</span>
+                </div>
+
+                <Link
+                  to="/lookup"
+                  className="mt-3.5 w-full inline-flex items-center justify-between rounded-lg bg-primary/10 px-3.5 py-2.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+                >
+                  <span>{t('Evaluate Real Address in Navigator Dashboard', 'Consultar Dirección en el Panel')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+
+              {/* Context Architectural Photography Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
+                  <img
+                    src={civic}
+                    alt="Civic & Legal Justice Center"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                    Civic Justice
+                  </span>
+                </div>
+                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
+                  <img
+                    src={community}
+                    alt="Urban Residential Community"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                    Multifamily Living
+                  </span>
+                </div>
+                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
+                  <img
+                    src={building}
+                    alt="Apartment Building Architecture"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                    Exemption Rules
+                  </span>
+                </div>
+                <div className="relative group overflow-hidden rounded-lg border border-border h-24">
+                  <img
+                    src={law}
+                    alt="Public Housing Statutes"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute bottom-1 left-1.5 text-[10px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                    Corpus Statutes
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <main className="mx-auto max-w-[1440px] px-6 pb-12 sm:px-8">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="grid grid-cols-1 items-end gap-4 border-b border-border py-7 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_160px_100px_88px_116px]"
-        >
-          <label className="block text-[11px] font-bold uppercase tracking-wider" htmlFor="property-address">
-            {t('Property address', 'Dirección de la vivienda')}
-            <div className="relative mt-2">
-              <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                id="property-address"
-                required
-                list="sample-addresses-list"
-                value={address}
-                onChange={(event) => handlePropertySelect(event.target.value)}
-                placeholder="2100 Shattuck Ave, Berkeley, CA 94704"
-                className="field h-11 w-full rounded-md pl-10 pr-3 text-sm font-normal"
-              />
-              <datalist id="sample-addresses-list">
-                {sampleProperties.map((p) => (
-                  <option
-                    key={p.address_id}
-                    value={`${p.street_address}, ${p.postal_city}, ${p.state} ${p.zip}`}
-                  >
-                    {p.use_description || p.postal_city} (Built: {p.year_built || '?'})
-                  </option>
-                ))}
-              </datalist>
-            </div>
-          </label>
-          <div className="text-[11px] font-bold uppercase tracking-wider">
-            {t('As of', 'A fecha de')}
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="field mt-2 h-11 w-full justify-between rounded-md px-3 font-normal hover:bg-card"
-                  aria-label={t('Choose as-of date', 'Elegir fecha')}
-                >
-                  <span className="font-sans text-sm font-normal tabular-nums">
-                    {format(date, 'yyyy-MM-dd')}
-                  </span>
-                  <CalendarDays className="text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto rounded-md border border-border p-0 shadow-lg" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  defaultMonth={date}
-                  onSelect={(value) => {
-                    if (value) {
-                      setDate(value);
-                      setCalendarOpen(false);
-                    }
-                  }}
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider" htmlFor="year-built">
-            {t('Year built', 'Año constr.')}
-            <div className="field mt-2 flex h-11 items-center gap-2 rounded-md px-3 text-sm">
-              <Building2 className="size-4 text-muted-foreground" />
-              <input
-                id="year-built"
-                value={yearBuilt}
-                onChange={(e) => setYearBuilt(e.target.value)}
-                className="w-12 bg-transparent font-sans font-normal tabular-nums outline-none"
-              />
-            </div>
-          </label>
-          <label className="block text-[11px] font-bold uppercase tracking-wider" htmlFor="units-count">
-            {t('Units', 'Unidades')}
-            <div className="field mt-2 flex h-11 items-center rounded-md px-3 text-sm">
-              <input
-                id="units-count"
-                value={units}
-                onChange={(e) => setUnits(e.target.value)}
-                className="w-12 bg-transparent font-sans font-normal tabular-nums outline-none"
-              />
-            </div>
-          </label>
-          <Button type="submit" variant="neo" disabled={loading} className="h-11">
-            {loading ? <Loader2 className="animate-spin" /> : <Search />}
-            {t('Search', 'Buscar')}
-          </Button>
-        </form>
-
-        <div role="status" className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            {searched
-              ? t(
-                  `Results for ${address} as of ${format(date, 'yyyy-MM-dd')}. Verified against statutory rules.`,
-                  `Resultados para ${address} a fecha de ${format(date, 'yyyy-MM-dd')}. Verificado con leyes vigentes.`
-                )
-              : t(
-                  'Search any address across Boston, Cambridge, LA, SF, Berkeley, Hoboken, Jersey City, or Newark.',
-                  'Busque cualquier dirección en Boston, Cambridge, LA, SF, Berkeley, Hoboken, Jersey City o Newark.'
-                )}
-          </span>
-        </div>
-
-        <section className="pt-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold sm:text-sm">
-              <MapPin className="size-4 text-muted-foreground" />
-              {jurisdictionStack.map((j, idx) => (
-                <span key={j.name} className="flex items-center gap-2">
-                  <span className={idx === jurisdictionStack.length - 1 ? 'font-bold' : ''}>
-                    {j.name}
-                  </span>
-                  {idx < jurisdictionStack.length - 1 && (
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  )}
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <StatusPill
-                className="bg-applies text-chip-foreground"
-                icon={<Check className="size-3.5" />}
-                text={t(`${appliesCount} apply`, `${appliesCount} aplican`)}
-              />
-              <StatusPill
-                className="bg-unknown text-chip-foreground"
-                icon={<CircleHelp className="size-3.5" />}
-                text={t(`${unknownCount} unknown`, `${unknownCount} sin determinar`)}
-              />
-              {upcomingCount > 0 && (
-                <StatusPill
-                  className="bg-secondary text-foreground"
-                  icon={<Clock3 className="size-3.5" />}
-                  text={t(`${upcomingCount} upcoming`, `${upcomingCount} próximas`)}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_440px]">
-            <div className="min-w-0">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-baseline gap-2">
-                  <h2 className="text-xl">{t('Your rulebook', 'Sus reglas')}</h2>
-                  <span className="text-xs text-muted-foreground">
-                    {currentRules.length} {t('rules evaluated', 'reglas evaluadas')}
-                  </span>
-                </div>
-                <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
-                  {(['all', 'applies', 'unknown'] as const).map((item) => (
-                    <Button
-                      key={item}
-                      variant="ghost"
-                      size="sm"
-                      aria-pressed={filter === item}
-                      onClick={() => setFilter(item)}
-                      className={`h-7 rounded-md px-3 text-xs font-semibold ${
-                        filter === item
-                          ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {item === 'all'
-                        ? t('All rules', 'Todas')
-                        : item === 'applies'
-                        ? t('Applies', 'Aplican')
-                        : t('Unknown', 'Sin determinar')}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rule-list grid gap-3 xl:grid-cols-2" key={filter}>
-                {visibleRules.map((rule) => {
-                  const Icon = getCategoryIcon(rule.category || rule.icon);
-                  const isSelected = selected?.id === rule.id;
-                  return (
-                    <Button
-                      key={rule.id}
-                      variant="neoOutline"
-                      data-status={rule.status}
-                      aria-pressed={isSelected}
-                      onClick={() => setSelected(rule)}
-                      className="group h-auto w-full justify-start gap-4 whitespace-normal rounded-lg px-5 py-4 text-left sm:gap-5"
-                    >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-foreground">
-                        <Icon className="size-5!" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-lg leading-tight">{rule.title[es ? 1 : 0]}</h3>
-                          <span
-                            className={`chip ${
-                              rule.status === 'applies'
-                                ? 'bg-applies text-chip-foreground'
-                                : rule.status === 'unknown'
-                                ? 'bg-unknown text-chip-foreground'
-                                : 'bg-secondary text-foreground'
-                            }`}
-                          >
-                            {rule.status === 'applies'
-                              ? t('Applies', 'Aplica')
-                              : rule.status === 'unknown'
-                              ? t('Unknown', 'Sin determinar')
-                              : rule.status}
-                          </span>
-                        </div>
-                        <p className="mb-3 mt-1.5 max-w-[640px] text-[13px] font-normal leading-5 text-muted-foreground">
-                          {rule.summary[es ? 1 : 0]}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-                            <FileText className="size-3!" />
-                            {rule.citation}
-                          </span>
-                          <span className="flex items-center gap-1 text-[11px] font-semibold text-foreground">
-                            {t('Read the source', 'Leer la fuente')}
-                            <ArrowUpRight className="size-3.5!" />
-                          </span>
-                        </div>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {wide && (
-              <aside className="sticky top-24">
-                {selected ? (
-                  <SourceShell
-                    t={t}
-                    heading={t('Behind the rule', 'Detrás de la regla')}
-                    onClose={() => setSelected(null)}
-                  >
-                    <SourceBody rule={selected} es={es} date={date} t={t} />
-                  </SourceShell>
-                ) : (
-                  <SourceShell t={t} heading={t('Source panel', 'Panel de fuente')}>
-                    <h3 className="text-lg">{t('Nothing selected yet', 'Aún no hay selección')}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {t('Choose a rule on the left and this panel fills in with:', 'Elija una regla a la izquierda y este panel mostrará:')}
-                    </p>
-                    <ul className="mt-4 space-y-2.5 border-t border-border pt-4 text-sm">
-                      <li className="flex items-start gap-2">
-                        <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                        {t('The code section and citation', 'La sección y la cita del código')}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-4 shrink-0 text-applies" />
-                        {t('The conditions a rule depends on', 'Las condiciones de la regla')}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                        {t('Exact verified quoted span from public legal text', 'Fragmento citado exacto del texto legal')}
-                      </li>
-                    </ul>
-                  </SourceShell>
-                )}
-              </aside>
-            )}
-          </div>
-        </section>
-
-        <section className="mt-10 rounded-lg border border-border bg-secondary px-5 py-6 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 text-lg">
-              <Clock3 className="size-5 text-muted-foreground" />
-              {t('Upcoming and pending', 'Próximas y pendientes')}
-            </h2>
-            <span className="chip border border-border bg-card text-muted-foreground">
-              {t('Change Tracking T1–T5', 'Seguimiento de Cambios T1–T5')}
+      {/* 2. HOW IT WORKS SECTION (#how-it-works) */}
+      <section id="how-it-works" className="border-b border-border bg-secondary/30 py-16 sm:py-20">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              {t('Deterministic Architecture', 'Arquitectura Determinista')}
             </span>
-          </div>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
-            <div className="sm:border-r sm:border-border sm:pr-5">
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <span className="size-1.5 rounded-full bg-primary" />
-                {t('Not yet in effect (T1 & T3)', 'Aún no vigentes (T1 y T3)')}
-              </div>
-              <h3 className="text-base font-semibold">
-                {t('CA AB 325 & NJ FAIR Act Future Dates', 'Fechas futuras de CA AB 325 y NJ FAIR Act')}
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {t(
-                  'California antitrust amendments took effect 2026-01-01. New Jersey FAIR Act takes effect 2027-07-01 with preemption flags on local ordinances.',
-                  'Enmiendas de California en vigor 2026-01-01. Ley FAIR de Nueva Jersey en vigor 2027-07-01 con alertas de preempción sobre ordenanzas locales.'
-                )}
-              </p>
-            </div>
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <span className="size-1.5 rounded-full bg-unknown" />
-                {t('Pending legislation (T4)', 'Legislación propuesta (T4)')}
-              </div>
-              <h3 className="text-base font-semibold">
-                {t('Massachusetts S.2983 & H.5222', 'Proyectos de Massachusetts S.2983 y H.5222')}
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {t(
-                  'Tracked as pending proposals for Boston and Cambridge addresses. Never reported as active law.',
-                  'Registrados como propuestas pendientes para Boston y Cambridge. Nunca reportados como ley activa.'
-                )}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="link"
-            className="mt-3 h-7 px-0 text-xs text-foreground"
-            onClick={() => setExpanded(!expanded)}
-            aria-expanded={expanded}
-          >
-            {expanded ? t('Hide details', 'Ocultar detalles') : t('More about change tracking tests', 'Más sobre pruebas de cambios')}
-            <ArrowRight />
-          </Button>
-          {expanded && (
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display mt-2 text-foreground">
+              {t('How the Housing Law Navigator Evaluates Any Apartment', 'Cómo Evalúa RHLN Cualquier Apartamento')}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               {t(
-                'Change tracking test cases T1 to T5 are generated in out/changes.json matching the benchmark evaluation requirements.',
-                'Los casos de prueba T1 a T5 se generan en out/changes.json cumpliendo con los requisitos de evaluación del benchmark.'
+                'Built on the foundational principle: "The model reads, the code decides." We eliminate AI hallucinations by keeping execution completely deterministic, audit-traced, and cited verbatim.',
+                'Basado en el principio rector: "El modelo lee, el código decide". Eliminamos alucinaciones mediante un motor 100% determinista y con citas textuales verificadas.'
               )}
             </p>
-          )}
-        </section>
+          </div>
 
-        <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <House className="size-3.5" />
-            Rental Housing Law Navigator
-          </span>
-          <span>{t('Public sources. Verified legal text.', 'Fuentes públicas. Texto legal verificado.')}</span>
-        </footer>
-      </main>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Step 1 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between relative group hover:border-primary/50 transition-all">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                    01
+                  </span>
+                  <MapPin className="size-5 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {t('Multi-Tier Spatial Resolution', 'Resolución Espacial Multinivel')}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Resolves postal mailing cities to legal municipal boundaries across State → County → City. Checks boundary shapefiles so unincorporated county parcels are not erroneously subjected to city rent caps.',
+                    'Distingue direcciones postales de los municipios legales reales. Evita asignar erróneamente ordenanzas locales a áreas no incorporadas.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                <span className="font-bold text-foreground">Input: </span> Street, City, State, Zip, Coordinates
+              </div>
+            </div>
 
-      {!wide && (
-        <Dialog.Root open={selected !== null} onOpenChange={(open) => { if (!open) setSelected(null); }}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/30" />
-            <Dialog.Content className="source-panel fixed inset-y-0 right-0 z-50 w-full max-w-[440px] bg-card">
-              <SourceShell t={t} heading={t('Behind the rule', 'Detrás de la regla')} onClose={() => setSelected(null)} sheet>
-                {selected && <SourceBody rule={selected} es={es} date={date} t={t} />}
-              </SourceShell>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
-      )}
-    </div>
-  );
-}
+            {/* Step 2 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between relative group hover:border-primary/50 transition-all">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                    02
+                  </span>
+                  <Cpu className="size-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {t('Kleene 3-Valued Logic & Exemptions', 'Lógica de Kleene y Exenciones')}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Evaluates Costa-Hawkins exemptions, 15-year rolling construction windows under AB 1482, unit counts, and tenancy duration. If assessor data is incomplete, returns transparent "unknown" rather than guessing.',
+                    'Evalúa exenciones de Costa-Hawkins, antigüedad de 15 años bajo AB 1482 y número de unidades. Si faltan datos, devuelve "desconocido" en lugar de inventar.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                <span className="font-bold text-foreground">Logic: </span> True · False · Unknown (Conditional)
+              </div>
+            </div>
 
-function StatusPill({ className, icon, text }: { className: string; icon: React.ReactNode; text: string }) {
-  return <span className={`chip ${className}`}>{icon}{text}</span>;
-}
+            {/* Step 3 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between relative group hover:border-primary/50 transition-all">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-sm">
+                    03
+                  </span>
+                  <Scale className="size-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {t('Verbatim Cited Verdicts & Change Tracking', 'Veredictos con Citas Textuales')}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Generates plain-language compliance summaries grounded in exact verbatim quotes (≥20 chars) from the statutory corpus. Evaluates historical and upcoming effective dates (T1–T5).',
+                    'Genera resúmenes claros respaldados por citas textuales exactas (≥20 caracteres). Permite evaluar fechas efectivas pasadas y futuras (T1–T5).'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                <span className="font-bold text-foreground">Output: </span> 100% Verifiable Statutory Trace
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-function SourceShell({
-  t,
-  heading,
-  onClose,
-  children,
-  sheet = false,
-}: {
-  t: Copy;
-  heading: string;
-  onClose?: () => void;
-  children: React.ReactNode;
-  sheet?: boolean;
-}) {
-  return (
-    <section
-      className={
-        sheet
-          ? 'flex h-full flex-col overflow-hidden bg-card'
-          : 'panel flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-lg'
-      }
-    >
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-panel-header px-4 py-3">
-        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-foreground">
-          <FileText className="size-3.5 text-muted-foreground" />
-          {heading}
-        </span>
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground"
-            aria-label={t('Close source panel', 'Cerrar panel de fuente')}
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </Button>
-        )}
-      </header>
-      <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
-    </section>
-  );
-}
-
-function SourceBody({ rule, es, date, t }: { rule: Rule; es: boolean; date: Date; t: Copy }) {
-  const applies = rule.status === 'applies';
-  const isUnknown = rule.status === 'unknown';
-  const isSuperseded = rule.status === 'superseded';
-  const isNotYetEffective = rule.status === 'not_yet_effective';
-
-  const statusLabel = applies
-    ? t('Applies', 'Aplica')
-    : isUnknown
-    ? t('Unknown', 'Sin determinar')
-    : isSuperseded
-    ? t('Superseded', 'Sustituida')
-    : isNotYetEffective
-    ? t('Not yet effective', 'Aún no vigente')
-    : t('Pending', 'Pendiente');
-
-  const statusClass = applies
-    ? 'bg-applies text-chip-foreground'
-    : isUnknown
-    ? 'bg-unknown text-chip-foreground'
-    : isSuperseded
-    ? 'bg-purple-600 text-white'
-    : 'bg-secondary text-foreground';
-
-  return (
-    <div>
-      <span className={`chip ${statusClass}`}>{statusLabel}</span>
-
-      <h3 className="mt-3 text-xl leading-tight">{rule.code || rule.title[es ? 1 : 0]}</h3>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {t('Source reference for', 'Referencia de fuente para')}{' '}
-        <span className="font-semibold text-foreground">{rule.title[es ? 1 : 0].toLowerCase()}</span>
-      </p>
-
-      <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-y border-border py-3 text-xs">
-        <dt className="text-muted-foreground">{t('As of', 'A fecha de')}</dt>
-        <dd className="text-right font-semibold tabular-nums">{format(date, 'yyyy-MM-dd')}</dd>
-        <dt className="text-muted-foreground">{t('Citation', 'Cita legal')}</dt>
-        <dd className="text-right font-semibold font-mono">{rule.citation}</dd>
-      </dl>
-
-      <div className="excerpt mt-5">
-        <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          <FileText className="size-3" />
-          {t('Quoted span (verbatim text)', 'Fragmento citado (texto original)')}
-        </p>
-        <p className="text-[13px] text-foreground font-serif italic bg-secondary/50 p-3 rounded border border-border">
-          “{rule.quotedSpan || t('Quoted span in source text.', 'Fragmento citado en el texto.')}”
-        </p>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          {t('Verified exact substring located in official legal text.', 'Subcadena exacta verificada en el texto legal oficial.')}
-        </p>
-      </div>
-
-      <h4 className="mb-3 mt-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-        {t('Evaluation analysis', 'Análisis de aplicación')}
-      </h4>
-      <ul className="space-y-2.5 text-sm">
-        <li className="flex items-start gap-2">
-          {applies ? (
-            <Check className="mt-0.5 size-4 shrink-0 text-applies" />
-          ) : (
-            <CircleHelp className="mt-0.5 size-4 shrink-0 text-unknown" />
-          )}
-          <span>
-            {rule.explanation ||
-              t('Rule conditions evaluated against property facts.', 'Condiciones evaluadas contra datos de la vivienda.')}
-          </span>
-        </li>
-      </ul>
-
-      {rule.conflictFlag && (
-        <p className="mt-5 flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-xs leading-5 font-medium text-foreground">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-500" />
-          <span>
-            {rule.conflictNote ||
-              t(
-                'Conflict flag: potential state preemption or overlapping local rule detected for human review.',
-                'Alerta de conflicto: posible preempción estatal o regla superpuesta detectada.'
+      {/* 3. CAPABILITIES / FEATURES SECTION (#features) */}
+      <section id="features" className="py-16 sm:py-20 bg-background border-b border-border">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-12">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                {t('Core Platform Capabilities', 'Capacidades de la Plataforma')}
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display mt-2 text-foreground">
+                {t('Built for Legal Rigor and Extreme Accuracy', 'Diseñado para Rigor Jurídico y Precisión')}
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
+              {t(
+                'Six purpose-built engines working in concert to turn unstructured legal texts into programmatic compliance decisions.',
+                'Seis módulos especializados trabajando juntos para convertir textos legales en decisiones normativas programáticas.'
               )}
-          </span>
-        </p>
-      )}
+            </p>
+          </div>
 
-      <Button asChild variant="neo" className="mt-5 h-11 w-full">
-        <a href={rule.source} target="_blank" rel="noopener noreferrer">
-          {t('Open official source', 'Abrir fuente oficial')}
-          <ExternalLink />
-        </a>
-      </Button>
-      <p className="mt-3 text-center text-xs text-muted-foreground">
-        {t('Always check the original text. Not legal advice.', 'Consulte siempre el texto original. No es asesoría legal.')}
-      </p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Feature 1 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Search className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Address-Level Law Lookup', 'Consulta de Leyes por Dirección')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Input any residential address to evaluate all active municipal, county, and state rules. Automatically computes 4 primary scorecard pillars: rent caps, just cause eviction, security deposit ceiling, and algorithmic pricing bans.',
+                    'Evalúe cualquier dirección residencial para conocer las reglas aplicables de tope de renta, causa justa, fianza y software de precios.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/lookup" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Go to Address Lookup', 'Ir a Consulta')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <History className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Statutory Change Scenarios (T1–T5)', 'Seguimiento de Cambios (T1–T5)')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Trace longitudinal legislative shifts across 5 explicit benchmark tests: California AB 325 algorithmic ban, Hoboken/Jersey City bans, NJ FAIR Act, Massachusetts pending bills, and struck ballot measures.',
+                    'Rastree cambios legislativos en 5 escenarios: AB 325, ordenanzas de Hoboken/JC, NJ FAIR Act y proyectos de ley de Massachusetts.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/changes" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Explore Change Scenarios', 'Ver Escenarios')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Landmark className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Jurisdiction Stack Resolver', 'Resolutor de Jurisdicciones')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Hierarchical geocoding that resolves State, County, and Municipal authority layers. Displays constitutional authority level, home rule powers, and spatial boundaries for all 13 supported jurisdictions.',
+                    'Geocodificación jerárquica que resuelve capas de autoridad estatal, de condado y municipal, mostrando competencias legales.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/jurisdictions" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Browse Jurisdictions', 'Ver Jurisdicciones')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <Scale className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Statutory Rules Registry', 'Registro de Reglas Legales')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Searchable catalog of extracted legal rules matching rule_record.schema.json. Every entry specifies requirements, exemptions, citation strings, and verified verbatim quote matches against the corpus.',
+                    'Catálogo consultable de reglas con citas formales, requerimientos, excepciones y textos verificados con el corpus.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/rules" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Inspect Rules Registry', 'Ver Catálogo de Reglas')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Library className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Corpus Legal Document Reader', 'Lector de Documentos Legales')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Full in-app document reader for 87 official housing statutes, local ordinances, and regulations. Search statutory text and jump directly to verbatim cited paragraphs in the slide-out source drawer.',
+                    'Lector integrado para consultar los 87 textos legales del corpus con visor lateral de citas textuales destacadas.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/documents" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Open Law Library', 'Abrir Biblioteca')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-all">
+              <div className="space-y-3">
+                <div className="size-11 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <Terminal className="size-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('Bilateral REST API & Exports', 'API REST y Exportaciones')}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    'Programmatic FastAPI backend with Swagger docs (/docs), health monitoring, and one-click JSON/ZIP downloads for scored system deliverables: rules.json, lookups.json, and changes.json.',
+                    'Backend FastAPI con documentación Swagger (/docs), métricas y descarga directa de los archivos de exportación rules.json, lookups.json y changes.json.'
+                  )}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/60">
+                <Link to="/api" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                  <span>{t('Open API Hub', 'Ver Hub de API')}</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. TAILORED SOLUTIONS SECTION (#solutions) */}
+      <section id="solutions" className="py-16 sm:py-20 bg-secondary/20 border-b border-border">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              {t('Audience Solutions', 'Soluciones por Usuario')}
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display mt-2 text-foreground">
+              {t('Who RHLN is Built For', 'Para Quién Está Construido RHLN')}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                'Select your role to explore how the platform delivers tailored compliance intelligence for your specific workflow.',
+                'Seleccione su perfil para ver cómo la plataforma adapta la información normativa a su caso de uso.'
+              )}
+            </p>
+
+            {/* Persona Tabs */}
+            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 p-1.5 bg-card rounded-2xl border border-border/80 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActivePersona('renter')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  activePersona === 'renter'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Users className="size-4" />
+                <span>{t('Renters & Tenants', 'Inquilinos')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePersona('owner')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  activePersona === 'owner'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Building2 className="size-4" />
+                <span>{t('Housing Providers & Owners', 'Propietarios')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePersona('advocate')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  activePersona === 'advocate'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Gavel className="size-4" />
+                <span>{t('Legal Aid & Advocates', 'Defensores Legales')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePersona('agency')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  activePersona === 'agency'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Landmark className="size-4" />
+                <span>{t('Housing Agencies', 'Agencias Públicas')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active Persona Content Card */}
+          <div className="rounded-3xl border border-border bg-card p-6 sm:p-10 shadow-lg">
+            {activePersona === 'renter' && (
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <ShieldCheck className="size-3.5" />
+                    <span>{t('Tenant Protection Suite', 'Protección para el Inquilino')}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold font-display text-foreground">
+                    {t('Know Your Rights Before Paying Illegal Rent Hikes', 'Conozca sus Derechos Frente a Aumentos Ilegales')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {t(
+                      'Landlords frequently attempt rent increases or demand excessive security deposits without realizing local municipal rent boards or state laws cap their amounts. RHLN gives you instant, cited answers in plain English and Spanish.',
+                      'A menudo se exigen aumentos o depósitos excesivos que vulneran la ley. RHLN le brinda claridad inmediata respaldada con leyes oficiales.'
+                    )}
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-foreground/90">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Confirm your exact rent increase cap (e.g. Berkeley annual board limit vs CA AB 1482 8.8%)', 'Verifique el tope de aumento aplicable a su vivienda')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Verify if your landlord needs legal "just cause" before issuing an eviction notice', 'Compruebe si el arrendador requiere "causa justa" para desalojar')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Ensure security deposits do not exceed the 1-month statutory ceiling (AB 12)', 'Valide que el depósito no supere el límite legal de 1 mes (AB 12)')}</span>
+                    </li>
+                  </ul>
+                  <div className="pt-2">
+                    <Link
+                      to="/lookup"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <span>{t('Check My Apartment Address', 'Consultar Mi Dirección')}</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/30 p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <span className="text-xs font-bold text-foreground">{t('Sample Renter Assessment', 'Ejemplo de Evaluación')}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                      Protected
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="p-3 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">{t('Rent Increase Ceiling', 'Tope de Alquiler')}</span>
+                      <span className="text-sm font-extrabold text-foreground">5.0% + Local CPI Max</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Increases strictly limited to once every 12 months with 30-day advance notice.</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">{t('Eviction Defense', 'Defensa de Desalojo')}</span>
+                      <span className="text-sm font-extrabold text-foreground">Statutory Just Cause Required</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">No-fault eviction requires statutory relocation assistance payment.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePersona === 'owner' && (
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    <Building2 className="size-3.5" />
+                    <span>{t('Owner Compliance Engine', 'Cumplimiento para Propietarios')}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold font-display text-foreground">
+                    {t('Prevent Regulatory Fines & Verify Legal Exemptions', 'Evite Sanciones y Compruebe Exenciones')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {t(
+                      'Navigating the layered maze of Costa-Hawkins exemptions, 15-year rolling construction windows under AB 1482, and local municipal registration requirements can expose owners to legal risk. RHLN computes exact exemption eligibility deterministically.',
+                      'Conozca si sus inmuebles están exentos por antigüedad, tipo de propiedad o número de unidades, evitando riesgos legales y multas.'
+                    )}
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-foreground/90">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Verify 15-year rolling construction exemption dates for modern buildings', 'Compruebe la exención de 15 años para edificios modernos')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Audit single-family home separately alienable status under Costa-Hawkins', 'Audite el estatus de viviendas unifamiliares bajo Costa-Hawkins')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Ensure compliance with algorithmic rent-setting prohibitions (AB 325)', 'Cumpla con las prohibiciones de software algorítmico de rentas')}</span>
+                    </li>
+                  </ul>
+                  <div className="pt-2">
+                    <Link
+                      to="/lookup"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <span>{t('Audit Building Compliance', 'Auditar Inmueble')}</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/30 p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <span className="text-xs font-bold text-foreground">{t('Exemption Verification Breakdown', 'Desglose de Exenciones')}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
+                      Exemption Audit
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="p-3 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">{t('Costa-Hawkins Check', 'Verificación Costa-Hawkins')}</span>
+                      <span className="text-sm font-extrabold text-foreground">Separate Alienability</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Single-family homes and separately alienable condos exempt from local rent control.</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">{t('15-Year Rolling Window', 'Ventana Móvil de 15 Años')}</span>
+                      <span className="text-sm font-extrabold text-foreground">AB 1482 Exemption Test</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Properties built after 2011 exempt from statewide rent caps for evaluation date 2026-10-01.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePersona === 'advocate' && (
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    <Gavel className="size-3.5" />
+                    <span>{t('Legal Aid & Litigation Suite', 'Herramientas para Abogados')}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold font-display text-foreground">
+                    {t('Audit-Grade Statutory Evidence with Verbatim Quotes', 'Evidencia Jurídica con Citas Textuales')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {t(
+                      'Every single determination is backed by an exact quote substring from the enacted housing corpus. Housing attorneys can cite exact civil code sections and municipal ordinance provisions directly in court motions.',
+                      'Cada determinación está respaldada por citas textuales exactas del corpus, permitiendo fundamentar escritos y demandas judiciales.'
+                    )}
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-foreground/90">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('100% Citation Metric: Every rule matched against source documents', 'Métrica de Citas 100%: Cada regla contrastada con el documento original')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Inspect exact verbatim statutory text in the slide-out source drawer', 'Inspeccione el texto legal en el visor interactivo de fuentes')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Kleene 3-valued logic traces missing factual predicates with legal transparency', 'La lógica de Kleene transparenta los predicados fácticos pendientes')}</span>
+                    </li>
+                  </ul>
+                  <div className="pt-2">
+                    <Link
+                      to="/rules"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <span>{t('Open Rules & Evidence Registry', 'Abrir Catálogo de Reglas')}</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/30 p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <span className="text-xs font-bold text-foreground">{t('Auditor Statutory Trace', 'Trazabilidad Legal')}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold">
+                      D006 / Measure BB
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border text-xs font-mono">
+                    <span className="text-primary font-bold">BERKELEY-RENT-01</span>
+                    <p className="text-muted-foreground mt-1 italic text-[11px]">
+                      "...an owner of residential real property shall not, over the course of any 12-month period, increase the gross rental rate for a dwelling or a unit to an amount greater than the lesser of..."
+                    </p>
+                    <span className="mt-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                      ✓ Exact Quote Verified (187 chars)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePersona === 'agency' && (
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <Landmark className="size-3.5" />
+                    <span>{t('Municipal Policy & Agency Hub', 'Gestión para Agencias Públicas')}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold font-display text-foreground">
+                    {t('Programmatic Jurisdiction Stacks & Batch Analysis', 'Resolución Jurisdiccional y Análisis Masivo')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {t(
+                      'Housing authorities and municipal agencies can audit compliance across entire property portfolios. Test batch lookups across 500 benchmark properties and export verified deliverables (lookups.json, changes.json) via our REST API.',
+                      'Permite a las administraciones públicas y observatorios de vivienda auditar carteras completas y descargar entregables validados en JSON o ZIP.'
+                    )}
+                  </p>
+                  <ul className="space-y-2.5 text-xs text-foreground/90">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Batch evaluation across 500 benchmark properties in under 5 seconds', 'Evaluación por lotes de 500 propiedades en menos de 5 segundos')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Multi-tier jurisdictional boundary resolution across 13 legal entities', 'Resolución de límites espaciales en 13 entidades jurídicas')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                      <span>{t('Direct API export of official platform deliverables (rules.json, lookups.json)', 'Exportación directa vía API de entregables en JSON y ZIP')}</span>
+                    </li>
+                  </ul>
+                  <div className="pt-2">
+                    <Link
+                      to="/api"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <span>{t('Explore Agency API Endpoints', 'Ver Endpoints de la API')}</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-border/80 bg-secondary/30 p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <span className="text-xs font-bold text-foreground">{t('REST API Specifications', 'Especificaciones de API')}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                      FastAPI 1.0
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="p-2.5 rounded-lg bg-card border border-border flex items-center justify-between">
+                      <span className="text-primary font-bold">POST /api/v1/lookup</span>
+                      <span className="text-muted-foreground text-[11px]">Deterministic Address Query</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-card border border-border flex items-center justify-between">
+                      <span className="text-primary font-bold">POST /api/v1/resolve</span>
+                      <span className="text-muted-foreground text-[11px]">Jurisdiction Stack Geocode</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-card border border-border flex items-center justify-between">
+                      <span className="text-primary font-bold">GET /api/v1/export/zip</span>
+                      <span className="text-muted-foreground text-[11px]">Complete All-In-One Deliverable</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. MULTI-TIER JURISDICTION COVERAGE (#jurisdictions) */}
+      <section id="jurisdictions" className="py-16 sm:py-20 bg-background border-b border-border">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              {t('Multi-Tier Statutory Scope', 'Alcance Legal Multinivel')}
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display mt-2 text-foreground">
+              {t('Active Legal Coverage Across 3 States & Municipal Layers', 'Cobertura Activa en 3 Estados y Capas Locales')}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                'RHLN reconciles state baseline protections with local municipal rent stabilization ordinances.',
+                'RHLN articula las leyes estatales de base con las ordenanzas municipales de estabilización de alquileres.'
+              )}
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* California Card */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4 hover:border-primary/50 transition-all">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-3 rounded-full bg-emerald-500" />
+                  <h3 className="font-bold text-lg text-foreground">California</h3>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground font-semibold">CA</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t(
+                  'Statewide baseline under AB 1482 (Cal. Civ. Code §§ 1946.2 & 1947.12) with 5% + CPI rent cap. Reconciled with stricter municipal ordinances in Berkeley, Oakland, and San Francisco.',
+                  'Marco estatal AB 1482 articulado con ordenanzas municipales más estrictas en Berkeley, Oakland y San Francisco.'
+                )}
+              </p>
+              <div className="space-y-1.5 pt-2 border-t border-border/40 text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Local Ordinances:', 'Ordenanzas:')}</span>
+                  <span className="font-bold text-foreground">Berkeley Measure BB</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Security Deposit:', 'Fianza:')}</span>
+                  <span className="font-bold text-foreground">1 Month Max (AB 12)</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Algorithmic Pricing:', 'Software de Precios:')}</span>
+                  <span className="font-bold text-foreground">AB 325 / SB 763</span>
+                </div>
+              </div>
+            </div>
+
+            {/* New Jersey Card */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4 hover:border-primary/50 transition-all">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-3 rounded-full bg-blue-500" />
+                  <h3 className="font-bold text-lg text-foreground">New Jersey</h3>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground font-semibold">NJ</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t(
+                  'Anti-Eviction Act (N.J.S.A. 2A:18-61.1) requires judicial just cause. Rent control is strictly municipal via local rent leveling boards in Newark, Jersey City, and Hoboken.',
+                  'Ley Anti-Desalojo con causa justa judicial. El control de rentas se articula mediante juntas locales en Newark, Jersey City y Hoboken.'
+                )}
+              </p>
+              <div className="space-y-1.5 pt-2 border-t border-border/40 text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Rent Control:', 'Control de Renta:')}</span>
+                  <span className="font-bold text-foreground">Municipal Rent Boards</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Security Deposit:', 'Fianza:')}</span>
+                  <span className="font-bold text-foreground">1.5 Months (Escrow)</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Upcoming Reform:', 'Próxima Ley:')}</span>
+                  <span className="font-bold text-foreground">NJ FAIR Act (2027)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Massachusetts Card */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4 hover:border-primary/50 transition-all">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-3 rounded-full bg-purple-500" />
+                  <h3 className="font-bold text-lg text-foreground">Massachusetts</h3>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground font-semibold">MA</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t(
+                  'Market-rate tenancy framework under M.G.L. c. 186 & c. 239 summary process. Algorithmic rent-setting bills S.2983 and H.5222 remain pending before legislative committees.',
+                  'Régimen de mercado bajo leyes M.G.L. c. 186 y c. 239. Proyectos de ley contra software de precios en trámite legislativo.'
+                )}
+              </p>
+              <div className="space-y-1.5 pt-2 border-t border-border/40 text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Rent Control:', 'Control de Renta:')}</span>
+                  <span className="font-bold text-foreground">Market Rate Baseline</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Security Deposit:', 'Fianza:')}</span>
+                  <span className="font-bold text-foreground">1 Month Max (Bank Escrow)</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('Pending Bills:', 'Proyectos en Trámite:')}</span>
+                  <span className="font-bold text-foreground">S.2983 / H.5222</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. FAQ ACCORDION SECTION (#faq) */}
+      <section id="faq" className="py-16 sm:py-20 bg-secondary/20 border-b border-border">
+        <div className="mx-auto max-w-4xl w-full px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              {t('Frequently Asked Questions', 'Preguntas Frecuentes')}
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-display mt-2 text-foreground">
+              {t('Common Questions About RHLN Regulatory Intelligence', 'Preguntas Frecuentes sobre el Funcionamiento de RHLN')}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                'Everything you need to know about deterministic legal logic, verbatim citations, and coverage evaluation.',
+                'Todo lo que necesita saber sobre el motor determinista, citas textuales y alcance legal.'
+              )}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {faqItems.map((item, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-border bg-card overflow-hidden shadow-2xs transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(index)}
+                    className="w-full flex items-center justify-between p-5 text-left font-bold text-sm sm:text-base text-foreground hover:bg-secondary/40 transition-colors"
+                  >
+                    <span>{es ? item.qEs : item.qEn}</span>
+                    <ChevronDown
+                      className={`size-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-primary' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed border-t border-border/40">
+                      {es ? item.aEs : item.aEn}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 7. FINAL ENTERPRISE CTA SECTION */}
+      <section className="py-16 sm:py-24 bg-linear-to-br from-primary/10 via-card to-card">
+        <div className="mx-auto max-w-4xl w-full px-4 text-center sm:px-6 lg:px-8 space-y-6">
+          <div className="size-14 mx-auto rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
+            <Scale className="size-7" />
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl font-extrabold font-display text-foreground tracking-tight">
+            {t(
+              'Ready to Evaluate an Apartment Address?',
+              '¿Listo para Consultar una Dirección de Apartamento?'
+            )}
+          </h2>
+
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            {t(
+              'Access the live deterministic engine now. Evaluate any apartment address against public state and municipal statutes with cited, transparent answers.',
+              'Acceda ahora al motor determinista. Evalúe cualquier dirección de apartamento frente a leyes estatales y municipales con citas verificables.'
+            )}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              to="/lookup"
+              className="inline-flex items-center gap-2.5 rounded-xl bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
+            >
+              <Search className="size-4" />
+              <span>{t('Launch Compliance Navigator', 'Iniciar Navegador de Cumplimiento')}</span>
+              <ArrowRight className="size-4" />
+            </Link>
+
+            <Link
+              to="/changes"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-6 py-3.5 text-sm font-semibold text-foreground hover:bg-secondary transition-all"
+            >
+              <History className="size-4 text-primary" />
+              <span>{t('View Longitudinal Scenarios (T1–T5)', 'Ver Escenarios Temporales')}</span>
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

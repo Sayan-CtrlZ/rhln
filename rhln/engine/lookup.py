@@ -25,6 +25,7 @@ class AddressLookupEngine:
         self,
         address: SampleAddress,
         as_of: str = "2026-10-01",
+        facts_override: Optional[Dict[str, Any]] = None,
     ) -> List[AddressLookupRuleResult]:
         """Evaluates all rules for a given address on the specified as_of date."""
         resolved: ResolvedLocation = self.geo_resolver.resolve_address(address)
@@ -37,6 +38,10 @@ class AddressLookupEngine:
             "state": resolved.state,
             "owner_occupied": None,  # Always missing in public records
         }
+        if facts_override:
+            for k, v in facts_override.items():
+                if v is not None:
+                    facts[k] = v
 
         evaluations: List[AddressLookupRuleResult] = []
 

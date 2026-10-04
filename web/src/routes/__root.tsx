@@ -4,30 +4,63 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
-
+import { useEffect, useState, createContext, useContext, type ReactNode } from "react";
+import {
+  House,
+  Search,
+  Landmark,
+  History,
+  Scale,
+  Library,
+  Terminal,
+  Code2,
+  Globe2,
+  Moon,
+  Sun,
+  TriangleAlert,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SERVER_ROOT } from "../lib/api";
+import { AICopilotDrawer } from "@/components/AICopilotDrawer";
+
+// Shared Language Context
+type Language = 'en' | 'es';
+interface LangContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (en: string, es: string) => string;
+}
+export const LangContext = createContext<LangContextType>({
+  language: 'en',
+  setLanguage: () => {},
+  t: (en) => en,
+});
+
+export const useLang = () => useContext(LangContext);
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          The requested page does not exist in the Rental Housing Law Navigator.
         </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Go home
+            Return to Home
           </Link>
         </div>
       </div>
@@ -36,37 +69,32 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Navigation Error
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Something went wrong while rendering this section.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+        <div className="mt-6 flex justify-center gap-2">
+          <Button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          </Button>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
           >
-            Go home
-          </a>
+            Home
+          </Link>
         </div>
       </div>
     </div>
@@ -78,19 +106,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rental Housing Law Navigator" },
-      { name: "description", content: "Explore rental housing rules and their public sources." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "Rental Housing Law Navigator (RHLN)" },
+      {
+        name: "description",
+        content:
+          "Autonomous multi-jurisdictional housing law navigator. Determine applicable rules today and trace statutory changes with citations.",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=IBM+Plex+Mono:wght@400;500&display=swap" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=IBM+Plex+Mono:wght@400;500&display=swap",
       },
+      { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -116,11 +146,303 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [language, setLanguage] = useState<Language>('en');
+  const [dark, setDark] = useState(false);
+  const [aiCopilotOpen, setAiCopilotOpen] = useState(false);
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
+
+  useEffect(() => {
+    setDark(window.localStorage.getItem('theme') === 'dark');
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+    window.localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  const es = language === 'es';
+  const t = (en: string, spanish: string) => (es ? spanish : en);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <LangContext.Provider value={{ language, setLanguage, t }}>
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+          {/* Top Legal Disclaimer (TRD P0 Mandatory Notice) - Shown on Dashboard & Inner Pages */}
+          {!isLandingPage && (
+            <div className="border-b border-border bg-secondary/80 px-4 py-2 text-center text-xs font-semibold">
+              <div className="mx-auto flex max-w-[1600px] w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <p className="flex items-center gap-2">
+                  <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />
+                  <span>
+                    {t(
+                      'Not legal advice. Summaries of public housing law. All rules cite verified verbatim statutory text.',
+                      'No es asesoría legal. Resúmenes de leyes públicas. Todas las reglas citan texto legal verificado.'
+                    )}
+                  </span>
+                </p>
+                <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
+                  <span>Default As-Of: <strong>2026-10-01</strong></span>
+                  <span>·</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">FastAPI 1.0 Live</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sticky Navigation Header */}
+          <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur shadow-xs">
+            <div className="mx-auto flex max-w-[1600px] w-full items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+              <Link to="/" className="flex items-center gap-3 group shrink-0">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-primary text-primary-foreground shadow-xs group-hover:scale-105 transition-transform">
+                  <House className="size-4" strokeWidth={2.2} />
+                </span>
+                <div className="hidden sm:block">
+                  <span className="font-display font-bold text-base leading-none sm:text-lg">
+                    Rental Housing Law Navigator
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground font-mono">
+                    {isLandingPage ? t('Public Housing Law Intelligence', 'Inteligencia de Leyes de Vivienda') : 'RHLN · Compliance Dashboard'}
+                  </span>
+                </div>
+              </Link>
+
+              {/* Navigation Bar: Landing Page Section Anchor Links VS Dashboard Functional Tabs */}
+              {isLandingPage ? (
+                /* Landing Page Smooth-Scroll Navigation */
+                <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl border border-border/70 text-xs font-semibold">
+                  <a
+                    href="#overview"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('Overview', 'Inicio')}
+                  </a>
+                  <a
+                    href="#how-it-works"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('How It Works', 'Cómo Funciona')}
+                  </a>
+                  <a
+                    href="#features"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('Capabilities', 'Capacidades')}
+                  </a>
+                  <a
+                    href="#solutions"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('Who It\'s For', 'Para Quién Es')}
+                  </a>
+                  <a
+                    href="#jurisdictions"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('Coverage', 'Cobertura')}
+                  </a>
+                  <a
+                    href="#faq"
+                    className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+                  >
+                    {t('FAQ', 'Preguntas')}
+                  </a>
+                </nav>
+              ) : (
+                /* Dashboard 6-Column Navigation Bar */
+                <nav className="hidden lg:grid grid-cols-6 gap-1.5 flex-1 max-w-3xl mx-3 rounded-xl border border-border/80 bg-secondary/50 p-1">
+                  <Link
+                    to="/lookup"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <Search className="size-3.5 shrink-0" />
+                    <span>{t('Lookup', 'Consulta')}</span>
+                  </Link>
+                  <Link
+                    to="/changes"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <History className="size-3.5 shrink-0" />
+                    <span>{t('Changes', 'Cambios')}</span>
+                  </Link>
+                  <Link
+                    to="/jurisdictions"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <Landmark className="size-3.5 shrink-0" />
+                    <span>{t('Jurisdictions', 'Jurisdicciones')}</span>
+                  </Link>
+                  <Link
+                    to="/rules"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <Scale className="size-3.5 shrink-0" />
+                    <span>{t('Rules', 'Reglas')}</span>
+                  </Link>
+                  <Link
+                    to="/documents"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <Library className="size-3.5 shrink-0" />
+                    <span>{t('Corpus', 'Corpus')}</span>
+                  </Link>
+                  <Link
+                    to="/api"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/60 transition-all text-center whitespace-nowrap [&.active]:bg-primary [&.active]:text-primary-foreground [&.active]:shadow-xs"
+                  >
+                    <Terminal className="size-3.5 shrink-0" />
+                    <span>{t('API & Docs', 'API y Docs')}</span>
+                  </Link>
+                </nav>
+              )}
+
+              {/* Utility Actions & Primary CTA Button */}
+              <div className="flex items-center gap-2 shrink-0">
+                {isLandingPage ? (
+                  /* Landing Page CTA Button */
+                  <Link
+                    to="/lookup"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <span>{t('Launch Dashboard', 'Iniciar Panel')}</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                ) : (
+                  /* Dashboard Actions */
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setAiCopilotOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all shadow-2xs shrink-0"
+                      title={t('Open AI Legal Copilot (Claude)', 'Abrir Asistente Legal de IA')}
+                    >
+                      <Sparkles className="size-3.5 text-purple-500 animate-pulse" />
+                      <span className="hidden sm:inline">{t('Ask AI Copilot', 'Asistente IA')}</span>
+                    </button>
+
+                    <a
+                      href={`${SERVER_ROOT}/docs`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hidden md:inline-flex items-center gap-1 rounded-md border border-border bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 shrink-0"
+                      title="Open FastAPI Swagger Interactive Docs"
+                    >
+                      <Code2 className="size-3" />
+                      <span>/docs</span>
+                    </a>
+                  </>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                  className="h-8 gap-1 px-2 text-xs font-semibold shrink-0"
+                >
+                  <Globe2 className="size-3.5" />
+                  <span>{language === 'en' ? 'EN' : 'ES'}</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDark(!dark)}
+                  className="size-8 shrink-0"
+                >
+                  {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                </Button>
+
+                {isLandingPage && (
+                  <Link
+                    to="/lookup"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all shrink-0 ml-1"
+                  >
+                    <span>{t('Launch App', 'Ir al Panel')}</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile / Compact Subnav for Small Screens */}
+            <div className="flex lg:hidden overflow-x-auto border-t border-border px-4 py-2 gap-1 bg-secondary/30">
+              <Link
+                to="/lookup"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('Lookup', 'Consulta')}
+              </Link>
+              <Link
+                to="/changes"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('Changes', 'Cambios')}
+              </Link>
+              <Link
+                to="/jurisdictions"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('Jurisdictions', 'Jurisdicciones')}
+              </Link>
+              <Link
+                to="/rules"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('Rules', 'Reglas')}
+              </Link>
+              <Link
+                to="/documents"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('Corpus', 'Corpus')}
+              </Link>
+              <Link
+                to="/api"
+                className="px-3 py-1 rounded text-xs font-semibold whitespace-nowrap text-muted-foreground [&.active]:bg-primary [&.active]:text-primary-foreground"
+              >
+                {t('API', 'API')}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setAiCopilotOpen(true)}
+                className="px-3 py-1 rounded text-xs font-bold whitespace-nowrap bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+              >
+                ✨ AI Copilot
+              </button>
+            </div>
+          </header>
+
+          {/* AI Copilot Slide-Over Drawer */}
+          <AICopilotDrawer open={aiCopilotOpen} onClose={() => setAiCopilotOpen(false)} />
+
+          {/* Page Body */}
+          <div className="flex-1">
+            <Outlet />
+          </div>
+
+          {/* Global Footer */}
+          <footer className="mt-12 border-t border-border bg-card/60 py-6 text-xs text-muted-foreground">
+            <div className="mx-auto flex max-w-[1600px] w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-2">
+                <House className="size-4 text-primary" />
+                <span className="font-semibold text-foreground">Rental Housing Law Navigator</span>
+                <span>·</span>
+                <span>{t('Strictly Deterministic Logic Engine', 'Motor Determinista de Reglas')}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <a href={`${SERVER_ROOT}/docs`} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                  Swagger /docs
+                </a>
+                <a href={`${SERVER_ROOT}/redoc`} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                  ReDoc
+                </a>
+                <span>·</span>
+                <span>{t('Verified public sources. Not legal advice.', 'Fuentes públicas verificadas. No es asesoría legal.')}</span>
+              </div>
+            </div>
+          </footer>
+        </div>
+      </LangContext.Provider>
     </QueryClientProvider>
   );
 }

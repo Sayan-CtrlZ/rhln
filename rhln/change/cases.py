@@ -8,7 +8,7 @@ from rhln.models import ChangeTestCaseResult, ChangesDeliverable, SampleAddress
 
 
 class ChangeTrackingEngine:
-    """Evaluates temporal diffs, boundary tests, and legislative scenarios T1–T6."""
+    """Evaluates temporal diffs, boundary tests, and legislative scenarios T1–T5."""
 
     def __init__(self, addresses: List[SampleAddress]):
         self.addresses = addresses

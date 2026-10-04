@@ -26,11 +26,19 @@ class JurisdictionItem(BaseModel):
     rule_count: int = 0
 
 
-class ResolveRequest(BaseModel):
+class AddressFields(BaseModel):
     street: str
     city: str
     state: str
     zip: str
+
+
+class ResolveRequest(BaseModel):
+    street: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip: Optional[str] = None
+    address: Optional[AddressFields] = None
 
 
 class ResolveResult(BaseModel):
@@ -112,17 +120,22 @@ async def resolve_address_stack(
     request_id: str = Depends(get_request_id),
 ) -> DataEnvelope[ResolveResult]:
     """Resolve an address to Census geocode and jurisdiction stack without evaluating rules (TRD P0)."""
+    street = req.street or (req.address.street if req.address else "")
+    city = req.city or (req.address.city if req.address else "")
+    state = req.state or (req.address.state if req.address else "")
+    zip_code = req.zip or (req.address.zip if req.address else "")
+
     addr = SampleAddress(
         address_id="ADHOC",
-        street_address=req.street,
-        postal_city=req.city,
-        state=req.state,
-        zip=req.zip,
+        street_address=street,
+        postal_city=city,
+        state=state,
+        zip=zip_code,
     )
     resolved = geo_resolver.resolve_address(addr)
 
     res = ResolveResult(
-        address=req.model_dump(),
+        address={"street": street, "city": city, "state": state, "zip": zip_code},
         geocode={
             "status": "match",
             "legal_city": resolved.legal_city,

@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiRouteImport } from './routes/api'
+import { Route as ChangesRouteImport } from './routes/changes'
+import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
+import { Route as LookupRouteImport } from './routes/lookup'
+import { Route as RulesRouteImport } from './routes/rules'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRoute = ApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangesRoute = ChangesRouteImport.update({
+  id: '/changes',
+  path: '/changes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JurisdictionsRoute = JurisdictionsRouteImport.update({
+  id: '/jurisdictions',
+  path: '/jurisdictions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LookupRoute = LookupRouteImport.update({
+  id: '/lookup',
+  path: '/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api': typeof ApiRoute
+  '/changes': typeof ChangesRoute
+  '/documents': typeof DocumentsRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/lookup': typeof LookupRoute
+  '/rules': typeof RulesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api': typeof ApiRoute
+  '/changes': typeof ChangesRoute
+  '/documents': typeof DocumentsRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/lookup': typeof LookupRoute
+  '/rules': typeof RulesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api': typeof ApiRoute
+  '/changes': typeof ChangesRoute
+  '/documents': typeof DocumentsRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/lookup': typeof LookupRoute
+  '/rules': typeof RulesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api'
+    | '/changes'
+    | '/documents'
+    | '/jurisdictions'
+    | '/lookup'
+    | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api'
+    | '/changes'
+    | '/documents'
+    | '/jurisdictions'
+    | '/lookup'
+    | '/rules'
+  id:
+    | '__root__'
+    | '/'
+    | '/api'
+    | '/changes'
+    | '/documents'
+    | '/jurisdictions'
+    | '/lookup'
+    | '/rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiRoute: typeof ApiRoute
+  ChangesRoute: typeof ChangesRoute
+  DocumentsRoute: typeof DocumentsRoute
+  JurisdictionsRoute: typeof JurisdictionsRoute
+  LookupRoute: typeof LookupRoute
+  RulesRoute: typeof RulesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api': {
+      id: '/api'
+      path: '/api'
+      fullPath: '/api'
+      preLoaderRoute: typeof ApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changes': {
+      id: '/changes'
+      path: '/changes'
+      fullPath: '/changes'
+      preLoaderRoute: typeof ChangesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jurisdictions': {
+      id: '/jurisdictions'
+      path: '/jurisdictions'
+      fullPath: '/jurisdictions'
+      preLoaderRoute: typeof JurisdictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lookup': {
+      id: '/lookup'
+      path: '/lookup'
+      fullPath: '/lookup'
+      preLoaderRoute: typeof LookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiRoute: ApiRoute,
+  ChangesRoute: ChangesRoute,
+  DocumentsRoute: DocumentsRoute,
+  JurisdictionsRoute: JurisdictionsRoute,
+  LookupRoute: LookupRoute,
+  RulesRoute: RulesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

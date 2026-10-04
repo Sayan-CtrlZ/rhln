@@ -17,6 +17,7 @@ from rhln.api.errors import (
 )
 from rhln.api.middleware import RequestContextMiddleware
 from rhln.api.routers import (
+    ai,
     changes,
     documents,
     exports,
@@ -36,12 +37,55 @@ logging.basicConfig(
 logger = logging.getLogger("rhln.api")
 
 
+from rhln.db import seed_database_if_needed
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan context manager for startup and shutdown hooks."""
     logger.info("Starting up %s v%s", settings.PROJECT_NAME, settings.VERSION)
+    try:
+        seed_database_if_needed()
+    except Exception as exc:
+        logger.warning("Database seeding notice: %s", exc)
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
+
+
+TAGS_METADATA = [
+    {
+        "name": "System",
+        "description": "System health, metadata, prompt versions, and mandatory legal disclaimers (TRD Section 8.3).",
+    },
+    {
+        "name": "Jurisdictions",
+        "description": "Supported jurisdictions and Census-level spatial hierarchy resolution (State -> County -> City).",
+    },
+    {
+        "name": "Documents",
+        "description": "Corpus manifest of 87 statutory documents and raw source text reader for quote verification.",
+    },
+    {
+        "name": "Extraction",
+        "description": "Offline Claude rule extraction pipeline status and execution triggers.",
+    },
+    {
+        "name": "Rules",
+        "description": "Extracted statutory housing rules catalog with verified verbatim quotes and schema validation.",
+    },
+    {
+        "name": "Lookups",
+        "description": "Deterministic address-level rulebook lookup engine and 500 benchmark sample properties.",
+    },
+    {
+        "name": "Change Tracking",
+        "description": "Longitudinal change evaluation scenarios (T1 through T5) tracking statutory shifts.",
+    },
+    {
+        "name": "Exports & Evaluation",
+        "description": "Direct downloads of official system deliverables (rules.json, lookups.json, changes.json, and all-in-one ZIP).",
+    },
+]
 
 
 def create_app() -> FastAPI:
@@ -50,13 +94,18 @@ def create_app() -> FastAPI:
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         description=(
-            "Rental Housing Law Navigator (RHLN) API — answers which housing rules apply to an "
-            "apartment address today, and what is about to change.\n\n"
+            "## Rental Housing Law Navigator (RHLN) API\n\n"
+            "An AI and deterministic logic system that turns thousands of pages of housing statutes into "
+            "accurate, cited, address-level answers for renters, housing advocates, and property managers.\n\n"
+            "### Core Architectural Tenet\n"
+            "*'The model reads, code decides'*: LLMs (Claude Sonnet 5.5) extract structured rules offline; "
+            "online address lookup is 100% deterministic Python code using Kleene 3-valued logic.\n\n"
             "**Disclaimer:** Not legal advice. This tool summarizes public law for information only."
         ),
         openapi_url="/openapi.json",
         docs_url="/docs",
         redoc_url="/redoc",
+        openapi_tags=TAGS_METADATA,
         lifespan=lifespan,
     )
 
@@ -89,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(lookups.router, prefix=prefix)
     app.include_router(changes.router, prefix=prefix)
     app.include_router(exports.router, prefix=prefix)
+    app.include_router(ai.router, prefix=prefix)
 
     return app
 

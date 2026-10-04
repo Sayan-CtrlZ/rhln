@@ -13,3 +13,6 @@ out/*.zip
 .DS_Store
 node_modules/
 .output/
+web/node_modules/
+web/.output/
+data/*.db

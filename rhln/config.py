@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         return ["*"]
 
     # Security & API Keys
-    API_KEY: str = "rhln-hackathon-write-key"
+    API_KEY: str = "rhln-production-write-key"
     API_KEY_HEADER_NAME: str = "X-API-Key"
 
     # Database

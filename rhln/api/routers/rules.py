@@ -74,3 +74,64 @@ async def get_rule(
         if r.team_rule_id.lower() == rule_id.lower():
             return wrap_data(data=r, request_id=request_id)
     raise NotFoundError(f"Rule with ID '{rule_id}' not found")
+
+
+class RuleSourceResponse(BaseModel):
+    rule_id: str
+    doc_id: Optional[str]
+    citation: str
+    source_url: str
+    quote: str
+    text_before: str
+    text_after: str
+
+
+@router.get("/rules/{rule_id}/source", response_model=DataEnvelope[RuleSourceResponse])
+async def get_rule_source(
+    rule_id: str,
+    request_id: str = Depends(get_request_id),
+) -> DataEnvelope[RuleSourceResponse]:
+    """Fetch verbatim quote in statutory context (text_before, quote, text_after) for TRD 9.5 SourceDrawer."""
+    rules = load_rules()
+    target_rule: Optional[OfficialRuleRecord] = None
+    for r in rules:
+        if r.team_rule_id.lower() == rule_id.lower():
+            target_rule = r
+            break
+    if not target_rule:
+        raise NotFoundError(f"Rule with ID '{rule_id}' not found")
+
+    text_before = ""
+    text_after = ""
+    quote = target_rule.quoted_span
+
+    # Try to load document full text from disk or database
+    doc_id = target_rule.source_doc_id
+    if doc_id:
+        doc_path = os.path.join("data", "corpus", "text", f"{doc_id}.txt")
+        if os.path.exists(doc_path):
+            with open(doc_path, "r", encoding="utf-8", errors="ignore") as f:
+                full_text = f.read()
+                pos = full_text.find(quote)
+                if pos != -1:
+                    start_slice = max(0, pos - 450)
+                    end_slice = min(len(full_text), pos + len(quote) + 450)
+                    text_before = full_text[start_slice:pos]
+                    text_after = full_text[pos + len(quote):end_slice]
+
+    if not text_before and not text_after:
+        text_before = f"... [Context from official statutory code: {target_rule.citation}] ...\n\n"
+        text_after = "\n\n... [Statutory text continues in official codification] ..."
+
+    return wrap_data(
+        data=RuleSourceResponse(
+            rule_id=target_rule.team_rule_id,
+            doc_id=doc_id,
+            citation=target_rule.citation,
+            source_url=target_rule.source_url,
+            quote=quote,
+            text_before=text_before,
+            text_after=text_after,
+        ),
+        request_id=request_id,
+    )

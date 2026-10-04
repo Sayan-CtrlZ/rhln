@@ -3,7 +3,8 @@
 import csv
 import json
 import os
-from typing import Any, Dict, List, Optional
+import re
+from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -37,8 +38,34 @@ class AddressInput(BaseModel):
     zip: str
 
 
+def parse_address_string(addr_str: str) -> AddressInput:
+    """Robustly parse an address string into street, city, state, zip."""
+    parts = [p.strip() for p in addr_str.split(",") if p.strip()]
+    if len(parts) >= 3:
+        street = parts[0]
+        city = parts[1]
+        state_zip = parts[2].split()
+        state = state_zip[0] if len(state_zip) > 0 else "CA"
+        zip_code = state_zip[1] if len(state_zip) > 1 else ""
+        return AddressInput(street=street, city=city, state=state, zip=zip_code)
+    elif len(parts) == 2:
+        street = parts[0]
+        state_match = re.search(r"\b([A-Z]{2})\b(?:\s*(\d{5}))?", parts[1])
+        if state_match:
+            state = state_match.group(1)
+            zip_code = state_match.group(2) or ""
+            city = parts[1][:state_match.start()].strip()
+            return AddressInput(street=street, city=city or "Berkeley", state=state, zip=zip_code)
+        return AddressInput(street=street, city=parts[1], state="CA", zip="")
+    else:
+        # Check if contains state code like NJ, MA, CA
+        state_match = re.search(r"\b(CA|NJ|MA)\b", addr_str, re.IGNORECASE)
+        state = state_match.group(1).upper() if state_match else "CA"
+        return AddressInput(street=addr_str.strip(), city="Berkeley" if state == "CA" else ("Newark" if state == "NJ" else "Boston"), state=state, zip="")
+
+
 class LookupRequest(BaseModel):
-    address: Optional[AddressInput] = None
+    address: Optional[Union[AddressInput, str]] = None
     property_id: Optional[str] = None
     facts: Optional[Dict[str, Any]] = Field(default_factory=dict)
     as_of: Optional[str] = None
@@ -54,6 +81,10 @@ class RuleEvaluationSummary(BaseModel):
     citation: Optional[str] = None
     category: Optional[str] = None
     title: Optional[str] = None
+    key_value: Optional[str] = None
+    requirement: Optional[str] = None
+    exemptions: Optional[str] = None
+    effective_date: Optional[str] = None
 
 
 class AddressLookupResponse(BaseModel):
@@ -82,19 +113,41 @@ async def lookup_address(
     if req.property_id:
         for a in sample_addresses:
             if a.address_id.lower() == req.property_id.lower():
-                target_addr = a
+                target_addr = a.model_copy()
                 break
         if not target_addr:
             raise NotFoundError(f"Property with ID '{req.property_id}' not found")
+        if req.facts:
+            if req.facts.get("year_built") is not None:
+                try:
+                    target_addr.year_built = int(req.facts["year_built"])
+                except (ValueError, TypeError):
+                    pass
+            if req.facts.get("units") is not None:
+                try:
+                    target_addr.units = int(req.facts["units"])
+                except (ValueError, TypeError):
+                    pass
     elif req.address:
+        addr_obj: AddressInput
+        if isinstance(req.address, str):
+            addr_obj = parse_address_string(req.address)
+        else:
+            addr_obj = req.address
+
+        # Check if matches any known sample property by normalized street
+        norm_street = addr_obj.street.strip().lower()
+        matched = next((a for a in sample_addresses if a.street_address.strip().lower() == norm_street), None)
         target_addr = SampleAddress(
-            address_id="ADHOC",
-            street_address=req.address.street,
-            postal_city=req.address.city,
-            state=req.address.state,
-            zip=req.address.zip,
-            year_built=req.facts.get("year_built") if req.facts else None,
-            units=req.facts.get("units") if req.facts else None,
+            address_id=matched.address_id if matched else "ADHOC",
+            street_address=addr_obj.street,
+            postal_city=addr_obj.city,
+            state=addr_obj.state,
+            zip=addr_obj.zip,
+            year_built=int(req.facts["year_built"]) if req.facts and req.facts.get("year_built") is not None else (matched.year_built if matched else None),
+            units=int(req.facts["units"]) if req.facts and req.facts.get("units") is not None else (matched.units if matched else None),
+            use_code=matched.use_code if matched else None,
+            use_description=matched.use_description if matched else None,
         )
     else:
         raise BadRequestError("Either address or property_id must be provided")
@@ -102,7 +155,7 @@ async def lookup_address(
     # 2. Run deterministic lookup engine
     rules = load_rules()
     lookup_engine = AddressLookupEngine(rules)
-    eval_results = lookup_engine.evaluate_address(target_addr, as_of=effective_as_of)
+    eval_results = lookup_engine.evaluate_address(target_addr, as_of=effective_as_of, facts_override=req.facts)
 
     geo_resolver = JurisdictionResolver()
     resolved_loc = geo_resolver.resolve_address(target_addr)
@@ -120,6 +173,10 @@ async def lookup_address(
                 citation=rule_meta.citation if rule_meta else None,
                 category=rule_meta.category if rule_meta else None,
                 title=rule_meta.title if rule_meta else None,
+                key_value=rule_meta.key_value if rule_meta else None,
+                requirement=rule_meta.requirement if rule_meta else None,
+                exemptions=rule_meta.exemptions if rule_meta else None,
+                effective_date=rule_meta.effective_date if rule_meta else None,
             )
         )
 
