@@ -1,7 +1,7 @@
 """Deterministic Address Lookup Engine for Module B."""
 
 import json
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from backend.engine.predicate import PredicateEvaluator, TriBool
 from backend.engine.precedence import PrecedenceResolver
 from backend.geo.stack import JurisdictionResolver, ResolvedLocation
